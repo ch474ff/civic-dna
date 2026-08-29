@@ -91,8 +91,8 @@ class MLScoringService(ScoringService):
                 if kw_lower not in seen and kw_lower in text_lower:
                     hits += 1
                     seen.add(kw_lower)
-        # 2 location keywords → factor = 1.0
-        return min(hits / 2.0, 1.0)
+        # 1+ location keywords → factor = 1.0
+        return min(hits / 1.0, 1.0)
 
     @staticmethod
     def _category_risk(cluster_context: Mapping[str, Any]) -> float:
