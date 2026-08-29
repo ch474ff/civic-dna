@@ -131,3 +131,30 @@ def test_officer_patch_operations(client: TestClient):
     body = patched.json()
     assert body["status"] == "in_progress"
     assert body["root_cause_asset"] == "pole-114"
+
+
+def test_analytics_summary(client: TestClient):
+    # Empty database first
+    response = client.get("/api/analytics/summary")
+    assert response.status_code == 200
+    body = response.json()
+    assert "complaints_total" in body
+    assert "clusters_total" in body
+    assert "clusters_by_status" in body
+    assert "complaints_by_department" in body
+    assert "average_priority_score" in body
+
+    # After creating a complaint
+    client.post("/api/complaints", json=VALID_COMPLAINT)
+    response = client.get("/api/analytics/summary")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["complaints_total"] >= 1
+    assert body["clusters_total"] >= 1
+    assert isinstance(body["average_priority_score"], float)
+
+
+def test_health_check(client: TestClient):
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
