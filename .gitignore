@@ -13,7 +13,9 @@ dist/
 .ruff_cache/
 .coverage
 coverage.xml
-htmlcov/
+# Local SQLite files used for ad-hoc API runs
+*.db
+
 
 # Python virtual environments
 .venv/
