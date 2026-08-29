@@ -18,7 +18,7 @@ get_settings.cache_clear()
 
 from app.main import app
 from app.services.classification import StubClassificationService
-from app.services.deduplication import StubDeduplicationService
+from app.services.deduplication import MultiSignalDeduplicationService, StubDeduplicationService
 from app.services.dependencies import (
     get_classification_service,
     get_deduplication_service,
@@ -34,7 +34,8 @@ def classification_spy() -> Mock:
 
 @pytest.fixture
 def deduplication_spy() -> Mock:
-    return Mock(wraps=StubDeduplicationService())
+    return Mock(wraps=MultiSignalDeduplicationService())
+
 
 
 @pytest.fixture
