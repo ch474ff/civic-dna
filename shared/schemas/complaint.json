@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civic-dna.local/schemas/complaint.json",
+  "title": "Complaint",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "complaint_id",
+    "title",
+    "description",
+    "lat",
+    "lng",
+    "images",
+    "audio",
+    "language",
+    "department",
+    "category",
+    "confidence",
+    "extracted_severity_keywords",
+    "cluster_id"
+  ],
+  "properties": {
+    "complaint_id": { "type": "string" },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "lat": { "type": "number" },
+    "lng": { "type": "number" },
+    "images": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "audio": { "type": ["string", "null"] },
+    "language": { "type": "string" },
+    "department": { "type": "string" },
+    "category": { "type": "string" },
+    "confidence": { "type": "number" },
+    "extracted_severity_keywords": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "cluster_id": { "type": ["string", "null"] }
+  }
+}

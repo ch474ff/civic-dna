@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civic-dna.local/schemas/feedback.json",
+  "title": "Feedback",
+  "type": "object",
+  "properties": {
+    "feedback_id": { "type": "string" },
+    "complaint_id": { "type": "string" },
+    "rating": { "type": ["integer", "null"], "minimum": 1, "maximum": 5 },
+    "comment": { "type": ["string", "null"] },
+    "created_at": { "type": "string", "format": "date-time" }
+  },
+  "required": ["feedback_id", "complaint_id", "rating", "comment", "created_at"]
+}
