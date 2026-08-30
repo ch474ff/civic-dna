@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime, timedelta
@@ -65,6 +65,13 @@ def process_complaint(
             extracted_severity_keywords=[],
         )
 
+    # Attach classified attributes and creation timestamp to draft before deduplication matching
+    draft["category"] = classified.category
+    draft["department"] = classified.department
+    draft["confidence"] = classified.confidence
+    draft["extracted_severity_keywords"] = list(classified.extracted_severity_keywords or [])
+    draft["created_at"] = datetime.now(UTC).isoformat()
+
     existing = [_complaint_snapshot(row) for row in db.query(Complaint).all()]
     try:
         duplicate_cluster_id = deduplication_service.find_duplicate_cluster(draft, existing)
@@ -111,7 +118,8 @@ def process_complaint(
         db.flush()
     else:
         members = list(cluster.member_complaint_ids or [])
-        members.append(complaint_id)
+        if complaint_id not in members:
+            members.append(complaint_id)
         cluster.member_complaint_ids = members
         flag_modified(cluster, "member_complaint_ids")
         cluster.priority_score = max(cluster.priority_score or 0.0, priority_score)
