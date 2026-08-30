@@ -38,6 +38,7 @@ describe('Citizen Tracking & SLA', () => {
       confidence: 0.9,
       extracted_severity_keywords: ['dark'],
       cluster_id: 'clust-lit-1',
+      created_at: new Date().toISOString(),
     };
 
     const mockCluster = {

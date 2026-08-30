@@ -27,6 +27,16 @@ def _base_complaint(**overrides: Any) -> dict[str, Any]:
     return base
 
 
+def _officer_headers(client: TestClient) -> dict[str, str]:
+    response = client.post(
+        "/api/auth/login",
+        json={"username": "officer", "password": "changeme"},
+    )
+    assert response.status_code == 200, response.text
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
 # 1. Text Similarity Engine Tests
 def test_text_similarity_identical():
     sim = TextSimilarityEngine.compute_text_similarity(
@@ -344,7 +354,7 @@ def test_duplicate_complaint_remains_persisted(client: TestClient):
     assert get_c2.json()["complaint_id"] == c2["complaint_id"]
 
     # Verify cluster member list includes both complaint IDs
-    cluster_resp = client.get(f"/api/clusters/{cluster_id}")
+    cluster_resp = client.get(f"/api/clusters/{cluster_id}", headers=_officer_headers(client))
     assert cluster_resp.status_code == 200
     members = cluster_resp.json()["member_complaint_ids"]
     assert c1["complaint_id"] in members

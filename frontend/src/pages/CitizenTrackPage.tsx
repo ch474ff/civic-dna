@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { complaintService } from '../services/complaintService';
 import { clusterService } from '../services/clusterService';
 import { Complaint, Cluster } from '../types';
-import { PriorityBadge } from '../components/PriorityBadge';
 import { CivicMap } from '../maps/CivicMap';
 import { FeedbackModal } from '../components/FeedbackModal';
 import { calculateSlaStatus } from '../utils/sla';
-import { formatDate, formatPercent } from '../utils/formatters';
+import { formatDate } from '../utils/formatters';
 import { getErrorMessage } from '../utils/error';
 import { 
   Search, 
@@ -15,9 +14,7 @@ import {
   Layers, 
   Building, 
   Star, 
-  AlertCircle, 
-  FileText,
-  ShieldCheck
+  AlertCircle
 } from 'lucide-react';
 
 interface CitizenTrackPageProps {
@@ -140,6 +137,11 @@ export const CitizenTrackPage: React.FC<CitizenTrackPageProps> = ({ initialCompl
                 <span className="text-xs text-slate-400 capitalize">
                   Language: {complaint.language}
                 </span>
+                {complaint.created_at && (
+                  <span className="text-xs text-slate-400">
+                    Filed on {formatDate(complaint.created_at)}
+                  </span>
+                )}
               </div>
               <h3 className="text-xl font-bold mt-1 text-white">{complaint.title}</h3>
             </div>
@@ -148,7 +150,7 @@ export const CitizenTrackPage: React.FC<CitizenTrackPageProps> = ({ initialCompl
               <span className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-sky-600/30 text-sky-300 border border-sky-500/40 uppercase">
                 {cluster?.status || 'Active'}
               </span>
-              {cluster && <PriorityBadge score={cluster.priority_score} size="md" />}
+              
             </div>
           </div>
 
@@ -194,10 +196,10 @@ export const CitizenTrackPage: React.FC<CitizenTrackPageProps> = ({ initialCompl
               <div className="border border-slate-200 rounded-xl p-4 bg-white shadow-sm space-y-1">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
                   <Layers className="h-3.5 w-3.5 text-indigo-600" />
-                  Cluster Intelligence
+                  Token Intelligence
                 </span>
                 <p className="text-xs font-mono text-slate-800 truncate">
-                  {complaint.cluster_id ? complaint.cluster_id : 'Single Event'}
+                  {complaint.cluster_id ? complaint.cluster_id : 'Single Incident Token'}
                 </p>
                 <p className="text-xs text-slate-500">
                   {cluster ? `${cluster.member_complaint_ids.length} linked grievances` : 'Direct Routing'}
@@ -242,7 +244,7 @@ export const CitizenTrackPage: React.FC<CitizenTrackPageProps> = ({ initialCompl
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200 bg-slate-50 p-4 rounded-xl">
               <div>
                 <h5 className="font-bold text-slate-800 text-sm">Citizen Service Rating</h5>
-                <p className="text-xs text-slate-500">Have municipal crews responded to this grievance?</p>
+                <p className="text-xs text-slate-500">How satisfied are you with the resolution of this grievance?</p>
               </div>
               <button
                 onClick={() => setIsFeedbackOpen(true)}

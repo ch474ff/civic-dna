@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import math
 import re
@@ -10,7 +10,7 @@ from typing import Any, Mapping, Sequence
 
 from app.config import Settings, get_settings
 
-# Common English stopwords for lightweight token filtering
+# Common English stopwords for lightweight token filtering (excluding negation markers used in phrases)
 STOPWORDS: frozenset[str] = frozenset(
     {
         "a",
@@ -76,10 +76,7 @@ STOPWORDS: frozenset[str] = frozenset(
         "most",
         "my",
         "myself",
-        "near",
-        "no",
         "nor",
-        "not",
         "now",
         "of",
         "off",
@@ -140,6 +137,253 @@ STOPWORDS: frozenset[str] = frozenset(
     }
 )
 
+CIVIC_SYNONYMS: dict[str, str] = {
+    # Magnitude / Severity
+    "huge": "_mag_high_",
+    "large": "_mag_high_",
+    "big": "_mag_high_",
+    "giant": "_mag_high_",
+    "massive": "_mag_high_",
+    "deep": "_mag_high_",
+    "major": "_mag_high_",
+    "severe": "_mag_high_",
+    "enormous": "_mag_high_",
+    "great": "_mag_high_",
+    "heavy": "_mag_high_",
+    "wide": "_mag_high_",
+    "small": "_mag_low_",
+    "minor": "_mag_low_",
+    "little": "_mag_low_",
+    "slight": "_mag_low_",
+    "tiny": "_mag_low_",
+    # Road / Infrastructure
+    "pothole": "_pothole_",
+    "potholes": "_pothole_",
+    "crater": "_pothole_",
+    "craters": "_pothole_",
+    "pit": "_pothole_",
+    "pits": "_pothole_",
+    "cavity": "_pothole_",
+    "cavities": "_pothole_",
+    "sinkhole": "_pothole_",
+    "trench": "_pothole_",
+    "rut": "_pothole_",
+    "ruts": "_pothole_",
+    "road": "_road_",
+    "street": "_road_",
+    "avenue": "_road_",
+    "lane": "_road_",
+    "rd": "_road_",
+    "st": "_road_",
+    "highway": "_road_",
+    "path": "_road_",
+    "roadway": "_road_",
+    "boulevard": "_road_",
+    "cross": "_road_",
+    "junction": "_transit_",
+    "intersection": "_transit_",
+    "corner": "_transit_",
+    "crossing": "_transit_",
+    "bus": "_transit_",
+    "stop": "_transit_",
+    "busstop": "_transit_",
+    "station": "_transit_",
+    "stand": "_transit_",
+    "pavement": "_pavement_",
+    "footpath": "_pavement_",
+    "sidewalk": "_pavement_",
+    "asphalt": "_pavement_",
+    "tar": "_pavement_",
+    "concrete": "_pavement_",
+    # Damage / Fault
+    "damaged": "_damage_",
+    "damage": "_damage_",
+    "damaging": "_damage_",
+    "broken": "_damage_",
+    "cracked": "_damage_",
+    "cracks": "_damage_",
+    "collapse": "_damage_",
+    "collapsed": "_damage_",
+    "uneven": "_damage_",
+    "rough": "_damage_",
+    "bumpy": "_damage_",
+    "faulty": "_damage_",
+    "defective": "_damage_",
+    "malfunctioning": "_damage_",
+    "ruined": "_damage_",
+    # Water & Supply & Pipeline
+    "water": "_water_",
+    "drinking": "_water_",
+    "potable": "_water_",
+    "tap": "_water_",
+    "taps": "_water_",
+    "pipe": "_pipe_",
+    "pipes": "_pipe_",
+    "pipeline": "_pipe_",
+    "pipelines": "_pipe_",
+    "main": "_pipe_",
+    "mains": "_pipe_",
+    "line": "_pipe_",
+    "lines": "_pipe_",
+    "supply": "_supply_",
+    "service": "_supply_",
+    "delivery": "_supply_",
+    "provision": "_supply_",
+    "coming": "_supply_",
+    "running": "_supply_",
+    "flowing": "_supply_",
+    "flow": "_supply_",
+    "stopped": "_outage_",
+    "shut": "_outage_",
+    "cut": "_outage_",
+    "outage": "_outage_",
+    "interrupted": "_outage_",
+    "disrupted": "_outage_",
+    "failed": "_outage_",
+    "failure": "_outage_",
+    "blackout": "_outage_",
+    "dry": "_outage_",
+    "stoppage": "_outage_",
+    "shortage": "_outage_",
+    "breakdown": "_outage_",
+    "inactive": "_outage_",
+    "no_water": "_outage_",
+    "leak": "_leak_",
+    "leaks": "_leak_",
+    "leaking": "_leak_",
+    "leakage": "_leak_",
+    "burst": "_leak_",
+    "bursts": "_leak_",
+    "bursting": "_leak_",
+    "overflow": "_leak_",
+    "overflowing": "_leak_",
+    "spilling": "_leak_",
+    "rupture": "_leak_",
+    "ruptured": "_leak_",
+    "gushing": "_leak_",
+    "seeping": "_leak_",
+    "seepage": "_leak_",
+    "flood": "_flood_",
+    "flooded": "_flood_",
+    "flooding": "_flood_",
+    "waterlog": "_flood_",
+    "waterlogging": "_flood_",
+    "waterlogged": "_flood_",
+    "submerged": "_flood_",
+    "inundated": "_flood_",
+    "drain": "_drain_",
+    "drains": "_drain_",
+    "drainage": "_drain_",
+    "sewer": "_drain_",
+    "sewers": "_drain_",
+    "sewage": "_drain_",
+    "gutter": "_drain_",
+    "gutters": "_drain_",
+    "manhole": "_drain_",
+    "manholes": "_drain_",
+    "culvert": "_drain_",
+    # Electricity & Streetlights
+    "electricity": "_electric_",
+    "electric": "_electric_",
+    "electrical": "_electric_",
+    "power": "_electric_",
+    "current": "_electric_",
+    "voltage": "_electric_",
+    "streetlight": "_light_",
+    "streetlights": "_light_",
+    "light": "_light_",
+    "lights": "_light_",
+    "lighting": "_light_",
+    "lamp": "_light_",
+    "lamps": "_light_",
+    "lamppost": "_light_",
+    "lampposts": "_light_",
+    "lantern": "_light_",
+    "lanterns": "_light_",
+    "bulb": "_light_",
+    "bulbs": "_light_",
+    "dark": "_dark_",
+    "darkness": "_dark_",
+    "unlit": "_dark_",
+    "dim": "_dark_",
+    "wire": "_wire_",
+    "wires": "_wire_",
+    "cable": "_wire_",
+    "cables": "_wire_",
+    "cord": "_wire_",
+    "cords": "_wire_",
+    "transformer": "_wire_",
+    "transformers": "_wire_",
+    "pole": "_wire_",
+    "poles": "_wire_",
+    "spark": "_spark_",
+    "sparks": "_spark_",
+    "sparking": "_spark_",
+    "shock": "_spark_",
+    "hanging": "_wire_hazard_",
+    "dangling": "_wire_hazard_",
+    "snapped": "_wire_hazard_",
+    "exposed": "_wire_hazard_",
+    # Garbage & Sanitation
+    "garbage": "_garbage_",
+    "trash": "_garbage_",
+    "waste": "_garbage_",
+    "rubbish": "_garbage_",
+    "litter": "_garbage_",
+    "debris": "_garbage_",
+    "junk": "_garbage_",
+    "dump": "_garbage_",
+    "dumped": "_garbage_",
+    "dumping": "_garbage_",
+    "filth": "_garbage_",
+    "bin": "_bin_",
+    "bins": "_bin_",
+    "dumpster": "_bin_",
+    "dumpsters": "_bin_",
+    "smell": "_odor_",
+    "smelling": "_odor_",
+    "stink": "_odor_",
+    "stinking": "_odor_",
+    "stench": "_odor_",
+    "odor": "_odor_",
+    "odour": "_odor_",
+    "foul": "_odor_",
+    "unhygienic": "_odor_",
+    # Area / Neighborhood
+    "neighborhood": "_area_",
+    "neighbourhood": "_area_",
+    "area": "_area_",
+    "locality": "_area_",
+    "colony": "_area_",
+    "sector": "_area_",
+    "block": "_area_",
+    "vicinity": "_area_",
+    "zone": "_area_",
+    "community": "_area_",
+    "society": "_area_",
+    # Danger / Hazard / Issue
+    "danger": "_hazard_",
+    "dangerous": "_hazard_",
+    "hazard": "_hazard_",
+    "hazardous": "_hazard_",
+    "unsafe": "_hazard_",
+    "risk": "_hazard_",
+    "peril": "_hazard_",
+    "accident": "_hazard_",
+    "accidents": "_hazard_",
+    "injury": "_hazard_",
+    "injuries": "_hazard_",
+    "problem": "_issue_",
+    "problems": "_issue_",
+    "issue": "_issue_",
+    "issues": "_issue_",
+    "trouble": "_issue_",
+    "slowdown": "_issue_",
+    "slowdowns": "_issue_",
+    "beside": "_near_",
+    "near": "_near_",
+}
+
 
 @dataclass(frozen=True)
 class SimilarityBreakdown:
@@ -156,8 +400,8 @@ class SimilarityBreakdown:
 class TextSimilarityEngine:
     """Lightweight, deterministic text and semantic similarity engine.
 
-    Uses token overlap (Jaccard/Dice), light stemming, character n-gram matching, and sequence similarity.
-    Isolate behind this class so future implementations can substitute embeddings / vector search.
+    Uses civic concept canonicalization, token overlap (Jaccard/Dice), light stemming,
+    character n-gram matching, and sequence similarity.
     """
 
     @staticmethod
@@ -172,15 +416,31 @@ class TextSimilarityEngine:
         return w
 
     @classmethod
+    def canonicalize_token(cls, raw: str) -> str:
+        """Map raw or stemmed word to canonical civic concept token."""
+        w = raw.lower().strip()
+        st = cls.stem(w)
+        return CIVIC_SYNONYMS.get(w, CIVIC_SYNONYMS.get(st, st))
+
+    @classmethod
     def tokenize(cls, text: str) -> list[str]:
         if not text:
             return []
-        cleaned = re.sub(r"[^\w\s]", " ", text.lower())
-        tokens = [
-            cls.stem(t)
-            for t in cleaned.split()
-            if t and t not in STOPWORDS and len(t) > 1
-        ]
+        cleaned = text.lower()
+        cleaned = re.sub(r"\bno\s+water\b", "no_water", cleaned)
+        cleaned = re.sub(r"\bpower\s+cut\b", "outage", cleaned)
+        cleaned = re.sub(r"\bnot\s+working\b", "broken", cleaned)
+        cleaned = re.sub(r"\bout\s+of\s+order\b", "broken", cleaned)
+        cleaned = re.sub(r"[^\w\s]", " ", cleaned)
+
+        tokens: list[str] = []
+        for raw in cleaned.split():
+            if not raw or len(raw) <= 1:
+                continue
+            st = cls.stem(raw)
+            canon = cls.canonicalize_token(raw)
+            if canon.startswith("_") or (raw not in STOPWORDS and st not in STOPWORDS):
+                tokens.append(canon)
         return tokens
 
     @staticmethod
@@ -225,14 +485,15 @@ class TextSimilarityEngine:
             return 1.0
 
         tokens1, tokens2 = cls.tokenize(t1), cls.tokenize(t2)
-        # If neither string contains content tokens (e.g. only stopwords), return 0 unless identical
         if not tokens1 and not tokens2:
             return 1.0 if t1 == t2 else 0.0
 
         tok_sim = cls.token_dice(tokens1, tokens2)
         ngram_sim = cls.ngram_dice(t1, t2, n=3)
         seq_sim = SequenceMatcher(None, t1, t2).ratio()
-        return 0.50 * tok_sim + 0.30 * ngram_sim + 0.20 * seq_sim
+
+        # Weighted combination favoring semantic concept token overlap
+        return 0.60 * tok_sim + 0.25 * ngram_sim + 0.15 * seq_sim
 
     @classmethod
     def compute_text_similarity(
@@ -249,7 +510,7 @@ class TextSimilarityEngine:
         title_sim = cls.string_similarity(title1, title2)
         desc_sim = cls.string_similarity(desc1, desc2)
 
-        # Full text similarity
+        # Full text combined
         full1 = f"{title1} {desc1}".strip()
         full2 = f"{title2} {desc2}".strip()
         full_sim = cls.string_similarity(full1, full2)
@@ -260,7 +521,7 @@ class TextSimilarityEngine:
         cross_sim = 0.5 * (cross_sim_1 + cross_sim_2)
 
         combined = max(
-            0.55 * title_sim + 0.45 * desc_sim,
+            0.50 * title_sim + 0.50 * desc_sim,
             full_sim,
             0.40 * title_sim + 0.30 * desc_sim + 0.30 * cross_sim,
         )
@@ -270,7 +531,7 @@ class TextSimilarityEngine:
         kw2 = set(str(k).lower().strip() for k in (c2.get("extracted_severity_keywords") or []))
         if kw1 and kw2:
             kw_sim = (2.0 * len(kw1 & kw2)) / (len(kw1) + len(kw2))
-            combined = 0.80 * combined + 0.20 * kw_sim
+            combined = 0.75 * combined + 0.25 * kw_sim
 
         return max(0.0, min(1.0, combined))
 
@@ -352,8 +613,7 @@ class MultiSignalDeduplicationService(DeduplicationService):
         if not (-90 <= lat1 <= 90 and -180 <= lng1 <= 180 and -90 <= lat2 <= 90 and -180 <= lng2 <= 180):
             return None
 
-        # Earth radius in meters
-        r = 6371000.0
+        r = 6371000.0  # Earth radius in meters
         phi1 = math.radians(lat1)
         phi2 = math.radians(lat2)
         delta_phi = math.radians(lat2 - lat1)
@@ -377,7 +637,6 @@ class MultiSignalDeduplicationService(DeduplicationService):
 
         dist = self.haversine_distance(lat1, lng1, lat2, lng2)
         if dist is None:
-            # Missing coordinates: return 0.0 with None distance
             return 0.0, None
 
         if dist <= 0.0:
@@ -385,7 +644,6 @@ class MultiSignalDeduplicationService(DeduplicationService):
         if dist >= self.geo_radius_meters:
             return 0.0, dist
 
-        # Linear decay within radius
         score = 1.0 - (dist / self.geo_radius_meters)
         return max(0.0, min(1.0, score)), dist
 
@@ -398,7 +656,6 @@ class MultiSignalDeduplicationService(DeduplicationService):
         cat2 = (c2.get("category") or "").strip().lower()
 
         if not cat1 or not cat2 or cat1 == "unclassified" or cat2 == "unclassified":
-            # Neutral compatibility score
             return 0.5
         if cat1 == cat2:
             return 1.0
@@ -413,7 +670,6 @@ class MultiSignalDeduplicationService(DeduplicationService):
         dept2 = (c2.get("department") or "").strip().lower()
 
         if not dept1 or not dept2 or dept1 == "general" or dept2 == "general":
-            # Neutral compatibility score
             return 0.5
         if dept1 == dept2:
             return 1.0
@@ -441,7 +697,6 @@ class MultiSignalDeduplicationService(DeduplicationService):
         t2 = self._parse_datetime(c2.get("created_at") or c2.get("timestamp"))
 
         if t1 is None or t2 is None:
-            # Neutral score when timestamps are absent
             return 0.8, None
 
         delta_seconds = abs((t1 - t2).total_seconds())
@@ -465,8 +720,8 @@ class MultiSignalDeduplicationService(DeduplicationService):
         dept_score = self.compute_department_similarity(complaint, candidate)
         temporal_score, delta_seconds = self.compute_temporal_similarity(complaint, candidate)
 
-        # Gating: If both complaints have valid coordinates but are beyond the geographic radius,
-        # they represent physically different incidents and cannot belong to the same duplicate cluster.
+        # Hard Gating: If both complaints have coordinates and distance exceeds configured radius,
+        # they represent distinct geographic locations and must not be grouped.
         if distance_meters is not None and distance_meters > self.geo_radius_meters:
             return SimilarityBreakdown(
                 total_score=0.0,
@@ -479,7 +734,6 @@ class MultiSignalDeduplicationService(DeduplicationService):
                 time_delta_seconds=delta_seconds,
             )
 
-        # Dynamic weight adjustment if geographic or temporal information is missing
         w_text = self.weight_text
         w_geo = self.weight_geo if distance_meters is not None else 0.0
         w_cat = self.weight_category
@@ -529,7 +783,6 @@ class MultiSignalDeduplicationService(DeduplicationService):
             if not candidate_cluster_id:
                 continue
 
-            # Skip comparing the complaint to itself
             candidate_id = candidate.get("complaint_id")
             if current_id and candidate_id and current_id == candidate_id:
                 continue
@@ -540,4 +793,3 @@ class MultiSignalDeduplicationService(DeduplicationService):
                 best_cluster_id = str(candidate_cluster_id)
 
         return best_cluster_id
-

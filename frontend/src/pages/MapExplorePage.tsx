@@ -2,22 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { clusterService } from '../services/clusterService';
 import { complaintService } from '../services/complaintService';
 import { Cluster, Complaint } from '../types';
-import { CivicMap } from '../maps/CivicMap';
 import { PriorityBadge } from '../components/PriorityBadge';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { calculateSlaStatus } from '../utils/sla';
 import { formatDate } from '../utils/formatters';
 import { getErrorMessage } from '../utils/error';
+import { CivicMap } from '../maps/CivicMap';
 import { 
   Layers, 
-  Building, 
   MapPin, 
-  Clock, 
-  AlertTriangle, 
-  ShieldAlert, 
   RefreshCw,
-  X,
-  ChevronRight
+  X
 } from 'lucide-react';
 
 export const MapExplorePage: React.FC = () => {
@@ -33,7 +27,7 @@ export const MapExplorePage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const clusterList = await clusterService.listClusters('priority');
+      const clusterList = await clusterService.listClusters('priority_desc');
       setClusters(clusterList);
 
       // Fetch individual complaints for members
@@ -71,10 +65,10 @@ export const MapExplorePage: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
             <MapPin className="h-5 w-5 text-sky-600" />
-            City-Wide GIS Incident & Cluster Map
+            City-Wide GIS Incident & Token Map
           </h2>
           <p className="text-xs text-slate-500">
-            Real-time geospatial intelligence mapping civic grievances, cluster centroids, and SLA urgency.
+            Real-time geospatial intelligence mapping civic grievances, token centroids, and SLA urgency.
           </p>
         </div>
 
@@ -96,7 +90,7 @@ export const MapExplorePage: React.FC = () => {
 
       {loading ? (
         <div className="bg-white rounded-xl p-12 border border-slate-200 shadow">
-          <LoadingSpinner message="Rendering GIS spatial layers and cluster centroids..." />
+          <LoadingSpinner message="Rendering GIS spatial layers and token centroids..." />
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -124,7 +118,7 @@ export const MapExplorePage: React.FC = () => {
                 <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                   <div>
                     <span className="text-[10px] uppercase font-bold text-indigo-600 tracking-wider">
-                      Cluster Inspector
+                      Token Inspector
                     </span>
                     <h3 className="font-mono text-sm font-bold text-slate-900 truncate">
                       {selectedCluster.cluster_id}
@@ -144,7 +138,7 @@ export const MapExplorePage: React.FC = () => {
                     <span className="font-semibold text-slate-800">{selectedCluster.department}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-100 items-center">
-                    <span className="text-slate-500">Priority Score:</span>
+                    <span className="text-slate-500">Priority Tier:</span>
                     <PriorityBadge score={selectedCluster.priority_score} size="sm" />
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-100">
@@ -252,7 +246,7 @@ export const MapExplorePage: React.FC = () => {
                 <Layers className="h-10 w-10 text-slate-300 mx-auto" />
                 <h4 className="text-sm font-semibold text-slate-700">GIS Entity Inspector</h4>
                 <p className="text-xs text-slate-500 max-w-xs mx-auto">
-                  Click any complaint marker or cluster perimeter circle on the map to inspect telemetry, severity, and SLA details.
+                  Click any complaint marker or token perimeter circle on the map to inspect telemetry, severity, and SLA details.
                 </p>
               </div>
             )}

@@ -43,6 +43,13 @@ class ComplaintResponse(BaseModel):
     confidence: float
     extracted_severity_keywords: list[str]
     cluster_id: str | None
+    created_at: datetime
+
+    @field_serializer("created_at")
+    def serialize_created_at(self, value: datetime) -> str:
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=UTC)
+        return value.isoformat()
 
 
 class ClusterResponse(BaseModel):
@@ -108,6 +115,19 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class EscalationItemResponse(BaseModel):
+    cluster_id: str
+    level: str
+    sla_deadline: datetime
+    hours_remaining: float
+
+    @field_serializer("sla_deadline")
+    def serialize_sla_deadline(self, value: datetime) -> str:
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=UTC)
+        return value.isoformat()
 
 
 class ErrorBody(BaseModel):

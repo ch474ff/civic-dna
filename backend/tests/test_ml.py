@@ -164,6 +164,22 @@ def test_severity_keyword_extraction(classifier: MLClassificationService):
     assert any("flooding" in k for k in keywords_lower)
 
 
+def test_false_positive_keyword_avoidance(classifier: MLClassificationService):
+    # 'deadline' should NOT extract 'dead'
+    # 'cabinet' should NOT extract 'bin'
+    # 'maintain' should NOT extract 'main'
+    complaint = {
+        "title": "The report deadline is Friday",
+        "description": "Please maintain the cabinet in the office.",
+        "language": "en",
+    }
+    result = classifier.classify_complaint(complaint)
+    keywords_lower = [k.lower() for k in result.extracted_severity_keywords]
+    assert "dead" not in keywords_lower
+    assert "death" not in keywords_lower
+    assert len(keywords_lower) == 0
+
+
 def test_unknown_category_fallback(classifier: MLClassificationService):
     complaint = {"title": "Unknown issue 123", "description": "unrelated matter"}
     result = classifier.classify_complaint(complaint)

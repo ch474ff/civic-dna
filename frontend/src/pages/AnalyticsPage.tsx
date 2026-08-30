@@ -3,7 +3,7 @@ import { analyticsService } from '../services/analyticsService';
 import { AnalyticsSummary } from '../types';
 import { StatCard } from '../components/StatCard';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { formatPercent, formatScore } from '../utils/formatters';
+import { formatScore } from '../utils/formatters';
 import { getErrorMessage } from '../utils/error';
 import { 
   BarChart3, 
@@ -13,7 +13,6 @@ import {
   Building2, 
   CheckCircle2, 
   Clock, 
-  AlertCircle,
   RefreshCw
 } from 'lucide-react';
 
@@ -117,9 +116,9 @@ export const AnalyticsPage: React.FC = () => {
         />
 
         <StatCard
-          title="Intelligence Clusters"
+          title="Intelligence Tokens"
           value={summary.clusters_total}
-          subtitle="Deduplicated incident groups"
+          subtitle="Deduplicated incident tokens"
           icon={<Layers className="h-6 w-6" />}
           color="indigo"
         />
@@ -133,9 +132,9 @@ export const AnalyticsPage: React.FC = () => {
         />
 
         <StatCard
-          title="Cluster Resolution Rate"
+          title="Token Resolution Rate"
           value={`${resolutionRate.toFixed(1)}%`}
-          subtitle={`${resolvedCount} resolved of ${summary.clusters_total} clusters`}
+          subtitle={`${resolvedCount} resolved of ${summary.clusters_total} tokens`}
           icon={<CheckCircle2 className="h-6 w-6" />}
           color="emerald"
         />
@@ -184,20 +183,20 @@ export const AnalyticsPage: React.FC = () => {
           )}
         </div>
 
-        {/* Cluster Status Distribution */}
+        {/* Token Status Distribution */}
         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-indigo-600" />
-              <h3 className="font-bold text-slate-800 text-base">Clusters by Lifecycle Status</h3>
+              <h3 className="font-bold text-slate-800 text-base">Tokens by Lifecycle Status</h3>
             </div>
             <span className="text-xs text-slate-400 font-medium">
-              {summary.clusters_total} Total Clusters
+              {summary.clusters_total} Total Tokens
             </span>
           </div>
 
           {statusEntries.length === 0 ? (
-            <p className="text-xs text-slate-400 py-8 text-center">No cluster statuses logged.</p>
+            <p className="text-xs text-slate-400 py-8 text-center">No token statuses logged.</p>
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -214,7 +213,7 @@ export const AnalyticsPage: React.FC = () => {
                         </span>
                       </div>
                       <div className="text-xl font-bold text-slate-900">{count}</div>
-                      <div className="text-[11px] text-slate-400">{percentage.toFixed(1)}% of clusters</div>
+                      <div className="text-[11px] text-slate-400">{percentage.toFixed(1)}% of tokens</div>
                     </div>
                   );
                 })}

@@ -20,6 +20,7 @@ describe('GIS Map Marker Transformations & Helpers', () => {
         confidence: 0.9,
         extracted_severity_keywords: [],
         cluster_id: 'clust-1',
+        created_at: new Date().toISOString(),
       },
       {
         complaint_id: 'cmp-2',
@@ -35,6 +36,7 @@ describe('GIS Map Marker Transformations & Helpers', () => {
         confidence: 0.9,
         extracted_severity_keywords: [],
         cluster_id: 'clust-1',
+        created_at: new Date().toISOString(),
       },
     ];
 

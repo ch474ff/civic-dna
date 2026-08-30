@@ -6,7 +6,8 @@ testable.  Supports: English, Hindi, Tamil, Bengali, Marathi.
 Classification approach:
 1. Concatenate title + description into a single text blob.
 2. For each category, count how many unique keywords from any language
-   appear as substrings in the text (case-insensitive for Latin script).
+   appear in the text (word-boundary regex match for Latin script,
+   substring match for non-Latin scripts).
 3. The category with the most keyword hits wins.
 4. Confidence = min(hits / 4, 0.95), so 4+ hits reaches maximum
    confidence.  Zero hits → category "Other", confidence 0.0.
@@ -15,6 +16,7 @@ Classification approach:
 
 from __future__ import annotations
 
+import re
 from typing import Any, Mapping
 
 from app.services.ml.config import CATEGORY_DEPARTMENT_MAP
@@ -23,6 +25,14 @@ from app.services.ml.keywords import (
     SEVERITY_KEYWORDS,
 )
 from app.services.ml.providers.base import MLProvider, ProviderClassificationResult
+
+
+def _matches_keyword(keyword: str, text_lower: str) -> bool:
+    """Match keyword using word-boundary regex for Latin script and substring match for other scripts."""
+    kw_lower = keyword.lower()
+    if kw_lower.isascii():
+        return bool(re.search(r"\b" + re.escape(kw_lower) + r"\b", text_lower))
+    return kw_lower in text_lower
 
 
 class KeywordMLProvider(MLProvider):
@@ -42,7 +52,7 @@ class KeywordMLProvider(MLProvider):
             hits = 0
             for _lang, keywords in lang_keywords.items():
                 for keyword in keywords:
-                    if keyword.lower() in text_lower:
+                    if _matches_keyword(keyword, text_lower):
                         hits += 1
             scores[category] = hits
 
@@ -83,7 +93,7 @@ class KeywordMLProvider(MLProvider):
         for _lang, keywords in SEVERITY_KEYWORDS.items():
             for keyword in keywords:
                 kw_lower = keyword.lower()
-                if kw_lower in text_lower and kw_lower not in seen_lower:
+                if kw_lower not in seen_lower and _matches_keyword(keyword, text_lower):
                     found.append(keyword)
                     seen_lower.add(kw_lower)
         return found
