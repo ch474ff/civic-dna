@@ -9,7 +9,7 @@ describe('Citizen Complaint Form & Receipt', () => {
     vi.restoreAllMocks();
   });
 
-  it('blocks submission when location is not confirmed', async () => {
+  it('blocks navigation to evidence when location is not confirmed', async () => {
     const mockNavigate = vi.fn();
     render(<CitizenSubmitPage onNavigateToTrack={mockNavigate} />);
 
@@ -17,18 +17,21 @@ describe('Citizen Complaint Form & Receipt', () => {
     fireEvent.change(screen.getByPlaceholderText(/e.g. Deep pothole/i), {
       target: { value: 'Water leak on main street' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/Describe the exact location/i), {
+    fireEvent.change(screen.getByPlaceholderText(/Describe what happened/i), {
       target: { value: 'Severe pipeline burst flooding road' },
     });
+
+    // Go to Step 2
+    fireEvent.click(screen.getAllByRole('button', { name: /Continue to Location/i })[0]);
 
     // Warning state is visible
     expect(screen.getByText(/Location not confirmed/i)).toBeInTheDocument();
 
-    const submitBtn = screen.getByRole('button', { name: /Submit Grievance/i });
-    fireEvent.click(submitBtn);
-
-    // Submission is blocked with inline error
-    expect(await screen.findByText(/Location not confirmed — click map or use GPS/i)).toBeInTheDocument();
+    // Next step button is disabled (both desktop and mobile)
+    const nextBtns = screen.getAllByRole('button', { name: /Continue to Evidence/i });
+    nextBtns.forEach(btn => {
+      expect(btn).toBeDisabled();
+    });
   });
 
   it('renders intake inputs, confirms location, and handles successful submission', async () => {
@@ -54,21 +57,29 @@ describe('Citizen Complaint Form & Receipt', () => {
 
     render(<CitizenSubmitPage onNavigateToTrack={mockNavigate} />);
 
-    // Fill form
+    // Step 1: Fill form
     fireEvent.change(screen.getByPlaceholderText(/e.g. Deep pothole/i), {
       target: { value: 'Water leak on main street' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/Describe the exact location/i), {
+    fireEvent.change(screen.getByPlaceholderText(/Describe what happened/i), {
       target: { value: 'Severe pipeline burst flooding road' },
     });
+    fireEvent.click(screen.getAllByRole('button', { name: /Continue to Location/i })[0]);
 
-    // Confirm location by editing coordinates or clicking GPS
-    const latInput = screen.getByDisplayValue('28.6139');
+    // Step 2: Confirm location by editing coordinates
+    const latInput = screen.getByLabelText(/Latitude/i);
     fireEvent.change(latInput, { target: { value: '28.6140' } });
 
     // Location confirmed badge appears
     expect(screen.getByText(/Location Confirmed/i)).toBeInTheDocument();
 
+    // Go to Step 3
+    fireEvent.click(screen.getAllByRole('button', { name: /Continue to Evidence/i })[0]);
+
+    // Step 3: Go to Step 4
+    fireEvent.click(screen.getAllByRole('button', { name: /Continue to Review/i })[0]);
+
+    // Step 4: Submit
     const submitBtn = screen.getByRole('button', { name: /Submit Grievance/i });
     fireEvent.click(submitBtn);
 
@@ -78,8 +89,7 @@ describe('Citizen Complaint Form & Receipt', () => {
       expect(screen.getByText('cmp-101')).toBeInTheDocument();
       expect(screen.getByText('Water Department')).toBeInTheDocument();
       expect(screen.getByText('Water Supply')).toBeInTheDocument();
-      expect(screen.getByText('85%')).toBeInTheDocument();
-      expect(screen.getByText(/Submission Language:/i)).toBeInTheDocument();
+      expect(screen.getByText('en')).toBeInTheDocument();
     });
   });
 
@@ -87,16 +97,22 @@ describe('Citizen Complaint Form & Receipt', () => {
     const mockNavigate = vi.fn();
     render(<CitizenSubmitPage onNavigateToTrack={mockNavigate} />);
 
+    // Step 1: Fill form
     fireEvent.change(screen.getByPlaceholderText(/e.g. Deep pothole/i), {
       target: { value: 'Test' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/Describe the exact location/i), {
+    fireEvent.change(screen.getByPlaceholderText(/Describe what happened/i), {
       target: { value: 'Test Description' },
     });
+    fireEvent.click(screen.getAllByRole('button', { name: /Continue to Location/i })[0]);
 
-    // Enter invalid latitude > 90 (also marks location as confirmed by user input)
-    const latInput = screen.getByDisplayValue('28.6139');
+    // Enter invalid latitude > 90
+    const latInput = screen.getByLabelText(/Latitude/i);
     fireEvent.change(latInput, { target: { value: '199' } });
+
+    // Go to Step 3 & Step 4
+    fireEvent.click(screen.getAllByRole('button', { name: /Continue to Evidence/i })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /Continue to Review/i })[0]);
 
     const submitBtn = screen.getByRole('button', { name: /Submit Grievance/i });
     fireEvent.click(submitBtn);
