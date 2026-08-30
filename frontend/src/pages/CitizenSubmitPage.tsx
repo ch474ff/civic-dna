@@ -28,19 +28,6 @@ import {
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
 
-const CATEGORIES: Record<string, string[]> = {
-  'Pothole': ['Minor', 'Major / Deep', 'On Highway'],
-  'Water Supply': ['No Supply', 'Low Pressure', 'Contaminated Water'],
-  'Sewage / Drainage': ['Overflow', 'Blocked Drain', 'Open Manhole'],
-  'Streetlight': ['Not Working', 'Flickering', 'Damaged Pole'],
-  'Garbage / Sanitation': ['Missed Collection', 'Open Dumping', 'Overflowing Bin'],
-  'Traffic Signal': ['Not Working', 'Timing Issue', 'Damaged'],
-  'Road Damage': ['Cracks', 'Waterlogging', 'Cave-in'],
-  'Encroachment': ['Footpath', 'Public Land', 'Road'],
-  'Noise Complaint': ['Construction', 'Commercial', 'Residential'],
-  'Other': [],
-};
-
 const LANGUAGES = [
   { code: 'en', label: 'English' },
   { code: 'hi', label: 'हिन्दी — Hindi' },
@@ -61,8 +48,6 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
   /* ----- Form state ----- */
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
-  const [subcategory, setSubcategory] = useState('');
   const [language, setLanguage] = useState('en');
   const [lat, setLat] = useState<number>(28.6139);
   const [lng, setLng] = useState<number>(77.2090);
@@ -77,8 +62,6 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
   const [error, setError] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<Complaint | null>(null);
   const [copied, setCopied] = useState(false);
-
-  const subcategories = useMemo(() => CATEGORIES[category] || [], [category]);
 
   const completedSteps = useMemo(() => {
     const set = new Set<number>();
@@ -184,8 +167,6 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
   const handleReset = () => {
     setTitle('');
     setDescription('');
-    setCategory('');
-    setSubcategory('');
     setImages([]);
     setImageUrl('');
     setAddress('');
@@ -216,7 +197,7 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">Grievance Registered Successfully</h2>
-                <p className="text-sm text-slate-500">Your complaint has been classified and assigned to the relevant department.</p>
+                <p className="text-sm text-slate-500">Your complaint has been logged in our system.</p>
               </div>
             </div>
           </div>
@@ -225,7 +206,7 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
             {/* Tracking ID */}
             <div className="bg-slate-50 border border-slate-200 rounded-md p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
-                <span className="text-xs font-medium text-slate-500 block">Complaint Tracking ID</span>
+                <span className="text-xs font-medium text-slate-500 block">Grievance ID</span>
                 <span className="font-mono text-base font-semibold text-slate-900">{receipt.complaint_id}</span>
               </div>
               <button onClick={copyComplaintId} className="civic-btn-secondary text-xs px-3 py-1.5">
@@ -234,60 +215,39 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
               </button>
             </div>
 
-            {/* Classification details */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="border border-slate-200 rounded-md p-4 space-y-2">
-                <h3 className="text-sm font-semibold text-slate-700">Classification</h3>
-                <dl className="space-y-1.5 text-sm">
-                  <div className="flex justify-between">
-                    <dt className="text-slate-500">Category</dt>
-                    <dd className="font-medium text-slate-800">{receipt.category}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-slate-500">Department</dt>
-                    <dd className="font-medium text-slate-800">{receipt.department}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-slate-500">Confidence</dt>
-                    <dd className="font-medium text-blue-700">{formatPercent(receipt.confidence)}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-slate-500">Language</dt>
-                    <dd className="font-medium text-slate-700 uppercase">{receipt.language}</dd>
-                  </div>
-                </dl>
+            {/* Classification & routing details */}
+            <div className="border border-slate-200 rounded-md p-4 bg-slate-50/50 space-y-3 text-sm">
+              <div className="flex justify-between items-center py-1">
+                <span className="text-slate-500 font-medium">Status</span>
+                <span className="font-semibold text-green-700 bg-green-50 border border-green-200 px-2.5 py-0.5 rounded text-xs">
+                  Submitted
+                </span>
               </div>
 
-              <div className="border border-slate-200 rounded-md p-4 space-y-2">
-                <h3 className="text-sm font-semibold text-slate-700">Cluster & Location</h3>
-                <dl className="space-y-1.5 text-sm">
-                  <div className="flex justify-between">
-                    <dt className="text-slate-500">Cluster ID</dt>
-                    <dd className="font-mono text-xs font-medium text-slate-800">
-                      {receipt.cluster_id ? receipt.cluster_id.substring(0, 12) + '…' : 'Pending'}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-slate-500">Coordinates</dt>
-                    <dd className="font-mono text-xs text-slate-700">
-                      {receipt.lat.toFixed(4)}, {receipt.lng.toFixed(4)}
-                    </dd>
-                  </div>
-                </dl>
+              {receipt.created_at && (
+                <div className="flex justify-between items-center py-1 border-t border-slate-100">
+                  <span className="text-slate-500 font-medium">Submitted Date</span>
+                  <span className="text-slate-800 font-medium">
+                    {new Date(receipt.created_at).toLocaleString(undefined, {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })}
+                  </span>
+                </div>
+              )}
 
-                {receipt.extracted_severity_keywords && receipt.extracted_severity_keywords.length > 0 && (
-                  <div className="pt-1">
-                    <span className="text-xs text-slate-500 block mb-1">Safety Keywords</span>
-                    <div className="flex flex-wrap gap-1">
-                      {receipt.extracted_severity_keywords.map((kw, i) => (
-                        <span key={i} className="px-2 py-0.5 bg-red-50 text-red-700 text-xs font-medium rounded border border-red-200">
-                          {kw}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              {receipt.department && (
+                <div className="flex justify-between items-center py-1 border-t border-slate-100">
+                  <span className="text-slate-500 font-medium">Department Routed To</span>
+                  <span className="text-slate-800 font-semibold">{receipt.department}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Explanation of what happens next */}
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md flex items-start gap-2 text-xs text-blue-800">
+              <span className="font-semibold">ⓘ</span>
+              <span>Your grievance has been registered and automatically routed to the appropriate department.</span>
             </div>
 
             {/* Actions */}
@@ -299,8 +259,7 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
                 onClick={() => onNavigateToTrack(receipt.complaint_id)}
                 className="civic-btn-primary w-full sm:w-auto"
               >
-                <Send className="h-4 w-4" />
-                Track Status
+                Track Grievance &rarr;
               </button>
             </div>
           </div>
@@ -365,43 +324,8 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
                   className="civic-input"
                 />
                 <div className="flex justify-between items-center mt-1">
-                  <span className="civic-helper">Briefly describe the issue in one line.</span>
+                  <span className="civic-helper">Briefly describe the problem in one line.</span>
                   <span className="text-xs text-slate-400">{title.length}/500</span>
-                </div>
-              </div>
-
-              {/* Category + Sub-category row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="category" className="civic-label">Category</label>
-                  <select
-                    id="category"
-                    value={category}
-                    onChange={(e) => { setCategory(e.target.value); setSubcategory(''); }}
-                    className="civic-select"
-                  >
-                    <option value="">Auto-classify (leave blank)</option>
-                    {Object.keys(CATEGORIES).map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                  <span className="civic-helper">Optional — You can skip this and we'll determine the category for you.</span>
-                </div>
-
-                <div>
-                  <label htmlFor="subcategory" className="civic-label">Sub-category</label>
-                  <select
-                    id="subcategory"
-                    value={subcategory}
-                    onChange={(e) => setSubcategory(e.target.value)}
-                    className="civic-select"
-                    disabled={subcategories.length === 0}
-                  >
-                    <option value="">— Select —</option>
-                    {subcategories.map((sub) => (
-                      <option key={sub} value={sub}>{sub}</option>
-                    ))}
-                  </select>
                 </div>
               </div>
 
@@ -411,7 +335,7 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
                   Description <span className="text-red-500">*</span>
                 </label>
                 <p className="text-xs text-slate-500 mb-1.5">
-                  Provide enough detail for the department to understand and resolve the issue.
+                  Tell us what happened, where it happened, and how it is affecting people.
                 </p>
                 <textarea
                   id="description"
@@ -440,6 +364,12 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
                     <option key={l.code} value={l.code}>{l.label}</option>
                   ))}
                 </select>
+              </div>
+
+              {/* Understated informational message */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-md flex items-start gap-2 text-xs text-slate-500">
+                <span className="font-semibold text-blue-600">ⓘ</span>
+                <span>Your grievance will be reviewed and automatically routed to the appropriate department.</span>
               </div>
             </div>
 
@@ -664,13 +594,11 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
             <h2 className="text-base font-semibold text-slate-800 mb-5">Review & Submit</h2>
 
             <div className="space-y-4">
-              {/* Grievance details summary */}
               <ReviewSection
                 title="Grievance Details"
                 onEdit={() => setCurrentStep(1)}
               >
                 <ReviewRow label="Title" value={title} />
-                {category && <ReviewRow label="Category" value={`${category}${subcategory ? ' — ' + subcategory : ''}`} />}
                 <ReviewRow label="Language" value={LANGUAGES.find(l => l.code === language)?.label || language} />
                 <ReviewRow label="Description" value={description} isMultiline />
               </ReviewSection>

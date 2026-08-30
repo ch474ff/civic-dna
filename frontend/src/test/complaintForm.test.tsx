@@ -83,13 +83,12 @@ describe('Citizen Complaint Form & Receipt', () => {
     const submitBtn = screen.getByRole('button', { name: /Submit Grievance/i });
     fireEvent.click(submitBtn);
 
-    // Verify instant AI classification receipt
+    // Verify citizen-facing receipt contains expected routing details but no internal AI metrics
     await waitFor(() => {
       expect(screen.getByText(/Grievance Registered Successfully/i)).toBeInTheDocument();
       expect(screen.getByText('cmp-101')).toBeInTheDocument();
       expect(screen.getByText('Water Department')).toBeInTheDocument();
-      expect(screen.getByText('Water Supply')).toBeInTheDocument();
-      expect(screen.getByText('en')).toBeInTheDocument();
+      expect(screen.getByText(/Your grievance has been registered and automatically routed/i)).toBeInTheDocument();
     });
   });
 
