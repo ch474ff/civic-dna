@@ -1,4 +1,4 @@
-﻿from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 import pytest
 from fastapi.testclient import TestClient
@@ -19,6 +19,16 @@ def real_pipeline_client():
     with TestClient(app) as client:
         yield client
     app.dependency_overrides.clear()
+
+
+def _officer_headers(client: TestClient) -> dict[str, str]:
+    response = client.post(
+        "/api/auth/login",
+        json={"username": "officer", "password": "changeme"},
+    )
+    assert response.status_code == 200, response.text
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
 
 
 # Test 1: Paraphrased Pothole Complaints (large pothole vs huge pothole)
@@ -276,7 +286,7 @@ def test_three_paraphrased_complaints_single_token_integration(real_pipeline_cli
     assert c3["cluster_id"] == token_id
 
     # 2. Retrieve resulting token and verify member count = 3
-    token_resp = real_pipeline_client.get(f"/api/clusters/{token_id}")
+    token_resp = real_pipeline_client.get(f"/api/clusters/{token_id}", headers=_officer_headers(real_pipeline_client))
     assert token_resp.status_code == 200
     token_data = token_resp.json()
     members = token_data["member_complaint_ids"]

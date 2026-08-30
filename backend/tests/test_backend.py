@@ -1,9 +1,14 @@
 from datetime import UTC, datetime, timedelta, timezone
 from unittest.mock import Mock
 
+import pytest
 from fastapi.testclient import TestClient
 
+from app.config import Settings
+from app.main import app
 from app.services.deduplication import MultiSignalDeduplicationService
+from app.services.dependencies import get_graph_service
+from app.services.graph import InMemoryGraphService, NodeLabel, RelationshipType
 
 VALID_COMPLAINT = {
     "title": "Broken streetlight on Main St",
@@ -71,7 +76,7 @@ def test_new_cluster_creation(client: TestClient):
     second_payload = {**VALID_COMPLAINT, "title": "Pothole on 2nd Ave", "lat": 19.07, "lng": 72.87}
     second = client.post("/api/complaints", json=second_payload).json()
     assert first["cluster_id"] != second["cluster_id"]
-    listing = client.get("/api/clusters?sort=priority_desc")
+    listing = client.get("/api/clusters?sort=priority_desc", headers=_officer_headers(client))
     assert listing.status_code == 200
     assert len(listing.json()) == 2
 
@@ -83,14 +88,14 @@ def test_existing_cluster_assignment(client: TestClient, deduplication_spy: Mock
     second_payload = {**VALID_COMPLAINT, "title": "Same streetlight still dark"}
     second = client.post("/api/complaints", json=second_payload).json()
     assert second["cluster_id"] == cluster_id
-    cluster = client.get(f"/api/clusters/{cluster_id}").json()
+    cluster = client.get(f"/api/clusters/{cluster_id}", headers=_officer_headers(client)).json()
     assert first["complaint_id"] in cluster["member_complaint_ids"]
     assert second["complaint_id"] in cluster["member_complaint_ids"]
 
 
 def test_sla_generation(client: TestClient):
     body = client.post("/api/complaints", json=VALID_COMPLAINT).json()
-    cluster = client.get(f"/api/clusters/{body['cluster_id']}").json()
+    cluster = client.get(f"/api/clusters/{body['cluster_id']}", headers=_officer_headers(client)).json()
     deadline = datetime.fromisoformat(cluster["sla_deadline"].replace("Z", "+00:00"))
     assert deadline.tzinfo is not None
     assert deadline > datetime.now(timezone.utc)
@@ -166,7 +171,7 @@ def test_health_check(client: TestClient):
 
 def test_escalations_endpoint(client: TestClient):
     client.post("/api/complaints", json=VALID_COMPLAINT)
-    response = client.get("/api/clusters/escalations")
+    response = client.get("/api/clusters/escalations", headers=_officer_headers(client))
     assert response.status_code == 200
     body = response.json()
     assert isinstance(body, list)
@@ -222,3 +227,156 @@ def test_temporal_deduplication_behavior():
     ]
     matched_id = service.find_duplicate_cluster(incoming_after_100h, existing_recent)
     assert matched_id == "clust-1"
+
+
+# =========================================================================
+# HARDENING TESTS: Issue 1 (Graph Pipeline), Issue 2 (Officer Protection),
+# Issue 3 (Production Safety), Issue 4 (CORS Configuration)
+# =========================================================================
+
+def test_officer_token_endpoints_protection(client: TestClient):
+    created = client.post("/api/complaints", json=VALID_COMPLAINT).json()
+    cluster_id = created["cluster_id"]
+
+    # 1. Unauthenticated requests must return 401
+    assert client.get("/api/clusters").status_code == 401
+    assert client.get(f"/api/clusters/{cluster_id}").status_code == 401
+    assert client.get("/api/clusters/escalations").status_code == 401
+
+    # 2. Invalid JWT token must return 401
+    bad_headers = {"Authorization": "Bearer invalid.jwt.token.here"}
+    assert client.get("/api/clusters", headers=bad_headers).status_code == 401
+    assert client.get(f"/api/clusters/{cluster_id}", headers=bad_headers).status_code == 401
+    assert client.get("/api/clusters/escalations", headers=bad_headers).status_code == 401
+
+    # 3. Valid officer JWT must return 200
+    auth_headers = _officer_headers(client)
+    assert client.get("/api/clusters", headers=auth_headers).status_code == 200
+    assert client.get(f"/api/clusters/{cluster_id}", headers=auth_headers).status_code == 200
+    assert client.get("/api/clusters/escalations", headers=auth_headers).status_code == 200
+
+
+def test_graph_intelligence_pipeline_integration(client: TestClient, deduplication_spy: Mock):
+    # Isolated in-memory graph service
+    test_graph = InMemoryGraphService()
+    app.dependency_overrides[get_graph_service] = lambda: test_graph
+
+    try:
+        # Step 1: Submit complaint A
+        resp_a = client.post("/api/complaints", json=VALID_COMPLAINT)
+        assert resp_a.status_code == 201
+        data_a = resp_a.json()
+        complaint_a_id = data_a["complaint_id"]
+        token_a_id = data_a["cluster_id"]
+
+        # Confirm Token A node and Complaint A node exist in graph
+        node_a = test_graph.get_node(complaint_a_id)
+        assert node_a is not None
+        assert node_a.label == NodeLabel.COMPLAINT
+        assert node_a.properties["title"] == VALID_COMPLAINT["title"]
+
+        cluster_node = test_graph.get_node(token_a_id)
+        assert cluster_node is not None
+        assert cluster_node.label == NodeLabel.CLUSTER
+
+        # Confirm Complaint A -> Token A edge
+        rels_a = test_graph.get_relationships(node_id=complaint_a_id, rel_type=RelationshipType.BELONGS_TO)
+        assert len(rels_a) == 1
+        assert rels_a[0].target_id == token_a_id
+
+        # Step 2: Submit similar complaint B (dedup matches token A)
+        deduplication_spy.find_duplicate_cluster.return_value = token_a_id
+        complaint_b_payload = {
+            **VALID_COMPLAINT,
+            "title": "Same streetlight still dark and broken",
+            "lat": 28.6140,
+            "lng": 77.2091,
+        }
+        resp_b = client.post("/api/complaints", json=complaint_b_payload)
+        assert resp_b.status_code == 201
+        data_b = resp_b.json()
+        complaint_b_id = data_b["complaint_id"]
+        assert data_b["cluster_id"] == token_a_id
+
+        # Confirm Complaint B node and edge Complaint B -> Token A exist in graph
+        node_b = test_graph.get_node(complaint_b_id)
+        assert node_b is not None
+        assert node_b.label == NodeLabel.COMPLAINT
+
+        rels_b = test_graph.get_relationships(node_id=complaint_b_id, rel_type=RelationshipType.BELONGS_TO)
+        assert len(rels_b) == 1
+        assert rels_b[0].target_id == token_a_id
+
+        # Confirm Token A has both incoming neighbors
+        neighbors = test_graph.get_neighbors(token_a_id, rel_type=RelationshipType.BELONGS_TO, direction="in")
+        neighbor_ids = {n.id for n in neighbors}
+        assert complaint_a_id in neighbor_ids
+        assert complaint_b_id in neighbor_ids
+
+        # Confirm cluster metadata nodes (Department, Location, Category)
+        cluster_rels = test_graph.get_relationships(node_id=token_a_id)
+        rel_types = {r.rel_type for r in cluster_rels}
+        assert RelationshipType.ASSIGNED_TO in rel_types
+        assert RelationshipType.LOCATED_AT in rel_types
+        assert RelationshipType.CATEGORIZED_AS in rel_types
+
+    finally:
+        app.dependency_overrides.pop(get_graph_service, None)
+
+
+def test_graph_failure_is_non_fatal_for_complaints(client: TestClient):
+    failing_graph = Mock()
+    failing_graph.link_complaint_to_cluster.side_effect = RuntimeError("Graph backend connection failed")
+    failing_graph.link_cluster_metadata.side_effect = RuntimeError("Graph database unreachable")
+    app.dependency_overrides[get_graph_service] = lambda: failing_graph
+
+    try:
+        response = client.post("/api/complaints", json=VALID_COMPLAINT)
+        # Complaint creation MUST still succeed despite graph outage
+        assert response.status_code == 201
+        body = response.json()
+        assert body["complaint_id"]
+        assert body["cluster_id"]
+
+        # Confirm complaint was persisted in SQLite database
+        fetched = client.get(f"/api/complaints/{body['complaint_id']}")
+        assert fetched.status_code == 200
+        assert fetched.json()["complaint_id"] == body["complaint_id"]
+    finally:
+        app.dependency_overrides.pop(get_graph_service, None)
+
+
+def test_production_security_validation():
+    # In development mode: default values are accepted
+    dev_settings = Settings(environment="development")
+    assert dev_settings.environment == "development"
+
+    # In production mode with default JWT secret: must raise ValueError
+    with pytest.raises(ValueError, match="Insecure JWT_SECRET"):
+        Settings(environment="production", jwt_secret="change-me-in-local-env")
+
+    # In production mode with default bootstrap password: must raise ValueError
+    with pytest.raises(ValueError, match="Insecure OFFICER_BOOTSTRAP_PASSWORD"):
+        Settings(
+            environment="production",
+            jwt_secret="a" * 32,
+            officer_bootstrap_password="changeme",
+        )
+
+    # In production mode with secure configurations: must succeed
+    prod_valid = Settings(
+        environment="production",
+        jwt_secret="a" * 32,
+        officer_bootstrap_password="strong-production-password-123",
+    )
+    assert prod_valid.environment == "production"
+
+
+def test_cors_configuration_parsing():
+    settings = Settings(
+        cors_allowed_origins="https://civicdna.city.gov, https://officer.civicdna.city.gov"
+    )
+    assert settings.cors_allowed_origins == [
+        "https://civicdna.city.gov",
+        "https://officer.civicdna.city.gov",
+    ]

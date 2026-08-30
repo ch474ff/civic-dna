@@ -12,8 +12,9 @@ from app.models import Cluster, Complaint, Department
 from app.schemas import ComplaintCreate
 from app.services.classification import ClassificationResult, ClassificationService
 from app.services.deduplication import DeduplicationService
-from app.services.scoring import ScoringService
+from app.services.graph import GraphService
 from app.services.ml.sla import get_sla_deadline
+from app.services.scoring import ScoringService
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,7 @@ def process_complaint(
     classification_service: ClassificationService,
     deduplication_service: DeduplicationService,
     scoring_service: ScoringService,
+    graph_service: GraphService | None = None,
 ) -> Complaint:
     complaint_id = str(uuid4())
     draft = payload.model_dump()
@@ -149,4 +151,38 @@ def process_complaint(
     db.add(complaint)
     db.commit()
     db.refresh(complaint)
+
+    # Update Graph Intelligence (non-fatal if graph service fails)
+    if graph_service is None:
+        try:
+            from app.services.dependencies import get_graph_service
+            graph_service = get_graph_service()
+        except Exception:
+            logger.exception("Could not obtain default graph service")
+            graph_service = None
+
+    if graph_service is not None:
+        try:
+            snapshot = _complaint_snapshot(complaint)
+            graph_service.link_complaint_to_cluster(
+                complaint_id=complaint.complaint_id,
+                cluster_id=cluster.cluster_id,
+                complaint_data=snapshot,
+            )
+            graph_service.link_cluster_metadata(
+                cluster_id=cluster.cluster_id,
+                department=cluster.department,
+                category=complaint.category,
+                location=(complaint.lat, complaint.lng),
+            )
+            if duplicate_cluster_id and duplicate_cluster_id != cluster.cluster_id:
+                graph_service.link_related_clusters(
+                    cluster.cluster_id,
+                    duplicate_cluster_id,
+                    weight=0.9,
+                    reason="Deduplication cluster match",
+                )
+        except Exception:
+            logger.exception("Graph service update failed; continuing without failing complaint")
+
     return complaint

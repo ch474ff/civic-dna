@@ -14,6 +14,7 @@ router = APIRouter()
 def list_clusters(
     sort: str = Query(default="priority_desc"),
     db: Session = Depends(get_db),
+    _: Officer = Depends(get_current_officer),
 ) -> list[Cluster]:
     query = db.query(Cluster)
     if sort in ("priority_desc", "priority_asc"):
@@ -23,7 +24,10 @@ def list_clusters(
 
 
 @router.get("/escalations", response_model=list[EscalationItemResponse])
-def get_escalations(db: Session = Depends(get_db)) -> list[dict]:
+def get_escalations(
+    db: Session = Depends(get_db),
+    _: Officer = Depends(get_current_officer),
+) -> list[dict]:
     clusters = db.query(Cluster).all()
     cluster_dicts = [
         {"cluster_id": c.cluster_id, "sla_deadline": c.sla_deadline}
@@ -42,7 +46,11 @@ def get_escalations(db: Session = Depends(get_db)) -> list[dict]:
 
 
 @router.get("/{cluster_id}", response_model=ClusterResponse)
-def get_cluster(cluster_id: str, db: Session = Depends(get_db)) -> Cluster:
+def get_cluster(
+    cluster_id: str,
+    db: Session = Depends(get_db),
+    _: Officer = Depends(get_current_officer),
+) -> Cluster:
     cluster = db.get(Cluster, cluster_id)
     if cluster is None:
         raise HTTPException(

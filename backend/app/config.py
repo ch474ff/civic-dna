@@ -1,5 +1,10 @@
-from functools import lru_cache
+from __future__ import annotations
 
+from functools import lru_cache
+from typing import Any
+from typing_extensions import Self
+
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,6 +15,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    environment: str = "development"
     app_name: str = "Civic DNA API"
     database_url: str = "postgresql+psycopg://civic:civic@localhost:5432/civic_dna"
     jwt_secret: str = "change-me-in-local-env"
@@ -39,6 +45,38 @@ class Settings(BaseSettings):
     neo4j_uri: str | None = None
     neo4j_user: str | None = None
     neo4j_password: str | None = None
+
+    @field_validator("cors_allowed_origins", mode="before")
+    @classmethod
+    def parse_cors_allowed_origins(cls, v: Any) -> list[str]:
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        if isinstance(v, (list, tuple, set)):
+            return [str(origin).strip() for origin in v if str(origin).strip()]
+        return []
+
+    @model_validator(mode="after")
+    def validate_production_security(self) -> Self:
+        is_prod = self.environment.strip().lower() in ("production", "prod")
+        if is_prod:
+            insecure_secrets = {
+                "change-me-in-local-env",
+                "test-secret-do-not-use-32b-min-key",
+                "secret",
+                "changeme",
+                "password",
+            }
+            if self.jwt_secret in insecure_secrets or len(self.jwt_secret) < 16:
+                raise ValueError(
+                    "Insecure JWT_SECRET detected in production environment. "
+                    "You must provide a secure, secret key of at least 16 characters in production."
+                )
+            if self.officer_bootstrap_password == "changeme":
+                raise ValueError(
+                    "Insecure OFFICER_BOOTSTRAP_PASSWORD ('changeme') detected in production environment. "
+                    "Please set a strong bootstrap password or disable automatic officer bootstrap."
+                )
+        return self
 
 
 @lru_cache

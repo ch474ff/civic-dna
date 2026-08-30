@@ -14,8 +14,10 @@ from app.services.deduplication import DeduplicationService
 from app.services.dependencies import (
     get_classification_service,
     get_deduplication_service,
+    get_graph_service,
     get_scoring_service,
 )
+from app.services.graph import GraphService
 from app.services.pipeline import process_complaint
 from app.services.scoring import ScoringService
 
@@ -29,6 +31,7 @@ def create_complaint(
     classification_service: ClassificationService = Depends(get_classification_service),
     deduplication_service: DeduplicationService = Depends(get_deduplication_service),
     scoring_service: ScoringService = Depends(get_scoring_service),
+    graph_service: GraphService = Depends(get_graph_service),
 ) -> Complaint:
     return process_complaint(
         db,
@@ -36,6 +39,7 @@ def create_complaint(
         classification_service,
         deduplication_service,
         scoring_service,
+        graph_service=graph_service,
     )
 
 
