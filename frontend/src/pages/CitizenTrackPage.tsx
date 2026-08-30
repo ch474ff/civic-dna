@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { complaintService } from '../services/complaintService';
 import { clusterService } from '../services/clusterService';
 import { Complaint, Cluster } from '../types';
-import { PriorityBadge } from '../components/PriorityBadge';
 import { CivicMap } from '../maps/CivicMap';
 import { FeedbackModal } from '../components/FeedbackModal';
 import { calculateSlaStatus } from '../utils/sla';
@@ -146,7 +145,7 @@ export const CitizenTrackPage: React.FC<CitizenTrackPageProps> = ({ initialCompl
               <span className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-sky-600/30 text-sky-300 border border-sky-500/40 uppercase">
                 {cluster?.status || 'Active'}
               </span>
-              {cluster && <PriorityBadge score={cluster.priority_score} size="md" />}
+              
             </div>
           </div>
 
@@ -240,7 +239,7 @@ export const CitizenTrackPage: React.FC<CitizenTrackPageProps> = ({ initialCompl
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200 bg-slate-50 p-4 rounded-xl">
               <div>
                 <h5 className="font-bold text-slate-800 text-sm">Citizen Service Rating</h5>
-                <p className="text-xs text-slate-500">Have municipal crews responded to this grievance?</p>
+                <p className="text-xs text-slate-500">How satisfied are you with the resolution of this grievance?</p>
               </div>
               <button
                 onClick={() => setIsFeedbackOpen(true)}
