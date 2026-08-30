@@ -263,7 +263,7 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
             </div>
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-slate-800 text-sky-400 border border-sky-500/30 rounded-lg text-xs font-medium">
               <Globe className="h-3.5 w-3.5" />
-              <span>5 Languages Supported</span>
+              <span>Multilingual Support</span>
             </div>
           </div>
 
@@ -306,6 +306,7 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
                     >
                       <option value="en">English (en)</option>
                       <option value="hi">हिन्दी — Hindi (hi)</option>
+                      <option value="hinglish">Hinglish (Hindi in Latin script)</option>
                       <option value="ta">தமிழ் — Tamil (ta)</option>
                       <option value="bn">বাংলা — Bengali (bn)</option>
                       <option value="mr">मराठी — Marathi (mr)</option>

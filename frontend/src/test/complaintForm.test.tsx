@@ -103,4 +103,63 @@ describe('Citizen Complaint Form & Receipt', () => {
 
     expect(await screen.findByText(/Please provide valid coordinates/i)).toBeInTheDocument();
   });
+
+  it('supports selecting Hinglish and submitting Hinglish complaints', async () => {
+    const mockCreated = {
+      complaint_id: 'cmp-hinglish-101',
+      title: 'Water pipeline leak ho rahi hai',
+      description: 'Hamare area mein main water pipeline bahut badly leak ho rahi hai.',
+      lat: 28.6140,
+      lng: 77.2090,
+      images: [],
+      audio: null,
+      language: 'hinglish',
+      department: 'Water Department',
+      category: 'Water Supply',
+      confidence: 0.90,
+      extracted_severity_keywords: ['leak', 'waste'],
+      cluster_id: 'clust-w1',
+      created_at: new Date().toISOString(),
+    };
+
+    const createSpy = vi.spyOn(complaintService, 'createComplaint').mockResolvedValue(mockCreated);
+    const mockNavigate = vi.fn();
+
+    render(<CitizenSubmitPage onNavigateToTrack={mockNavigate} />);
+
+    // Verify Hinglish option is rendered in the select dropdown
+    const select = screen.getByRole('combobox');
+    expect(screen.getByRole('option', { name: /Hinglish/i })).toBeInTheDocument();
+
+    // Select Hinglish
+    fireEvent.change(select, { target: { value: 'hinglish' } });
+
+    // Fill Hinglish title and description
+    fireEvent.change(screen.getByPlaceholderText(/e.g. Deep pothole/i), {
+      target: { value: 'Water pipeline leak ho rahi hai' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/Describe the exact location/i), {
+      target: { value: 'Hamare area mein main water pipeline bahut badly leak ho rahi hai.' },
+    });
+
+    // Confirm location
+    const latInput = screen.getByDisplayValue('28.6139');
+    fireEvent.change(latInput, { target: { value: '28.6140' } });
+
+    const submitBtn = screen.getByRole('button', { name: /Submit Grievance/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(createSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          language: 'hinglish',
+          title: 'Water pipeline leak ho rahi hai',
+          description: 'Hamare area mein main water pipeline bahut badly leak ho rahi hai.',
+        })
+      );
+      expect(screen.getByText(/Grievance Registered Successfully/i)).toBeInTheDocument();
+      expect(screen.getByText('Submission Language:')).toBeInTheDocument();
+      expect(screen.getAllByText(/hinglish/i).length).toBeGreaterThanOrEqual(1);
+    });
+  });
 });

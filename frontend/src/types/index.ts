@@ -1,3 +1,5 @@
+export type SupportedLanguage = 'en' | 'hi' | 'hinglish' | 'ta' | 'bn' | 'mr' | string;
+
 export interface ComplaintCreate {
   title: string;
   description: string;
@@ -5,7 +7,7 @@ export interface ComplaintCreate {
   lng: number;
   images?: string[];
   audio?: string | null;
-  language?: string;
+  language?: SupportedLanguage;
 }
 
 export interface ComplaintResponse {

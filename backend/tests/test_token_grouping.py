@@ -295,3 +295,41 @@ def test_three_paraphrased_complaints_single_token_integration(real_pipeline_cli
     assert c1["complaint_id"] in members
     assert c2["complaint_id"] in members
     assert c3["complaint_id"] in members
+
+
+def test_grouping_hinglish_and_english_equivalent_complaints(real_pipeline_client: TestClient):
+    # Complaint 1 (English): "The water pipeline near the market is leaking badly."
+    c1_payload = {
+        "title": "Leaking pipeline near market",
+        "description": "The water pipeline near the market is leaking badly.",
+        "lat": 28.6139,
+        "lng": 77.2090,
+        "images": [],
+        "language": "en",
+    }
+    r1 = real_pipeline_client.post("/api/complaints", json=c1_payload)
+    assert r1.status_code == 201
+    c1 = r1.json()
+
+    # Complaint 2 (Hinglish): "Market ke paas water pipeline bahut badly leak ho rahi hai."
+    c2_payload = {
+        "title": "Paani pipeline leak market ke paas",
+        "description": "Market ke paas water pipeline bahut badly leak ho rahi hai.",
+        "lat": 28.6141,
+        "lng": 77.2092,
+        "images": [],
+        "language": "hinglish",
+    }
+    r2 = real_pipeline_client.post("/api/complaints", json=c2_payload)
+    assert r2.status_code == 201
+    c2 = r2.json()
+
+    # Confirm both English and Hinglish complaints are merged into the same Token
+    assert c1["cluster_id"] == c2["cluster_id"]
+    token_id = c1["cluster_id"]
+    token_resp = real_pipeline_client.get(f"/api/clusters/{token_id}", headers=_officer_headers(real_pipeline_client))
+    assert token_resp.status_code == 200
+    token_data = token_resp.json()
+    members = token_data["member_complaint_ids"]
+    assert c1["complaint_id"] in members
+    assert c2["complaint_id"] in members

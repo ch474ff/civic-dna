@@ -104,6 +104,68 @@ def test_classification_bengali_and_marathi_complaints(classifier: MLClassificat
     assert result_mr.department == "Sanitation Department"
 
 
+def test_classification_hinglish_complaints(classifier: MLClassificationService):
+    # Water Supply Hinglish
+    water_complaint = {
+        "title": "Main water pipeline leak ho rahi hai",
+        "description": "Hamare area mein main water pipeline bahut badly leak ho rahi hai. Road par kaafi paani bhar gaya hai aur bahut saara paani waste ho raha hai. Jaldi se water department ko bhejiye.",
+        "language": "hinglish",
+    }
+    water_res = classifier.classify_complaint(water_complaint)
+    assert water_res.category == "Water Supply"
+    assert water_res.department == "Water Department"
+
+    # Roads & Potholes Hinglish
+    road_complaint = {
+        "title": "Sadak par bada gaddha hai",
+        "description": "Kharaab sadak par bahut bada gaddha ho gaya hai jisse vehicles damage ho rahe hain.",
+        "language": "hinglish",
+    }
+    road_res = classifier.classify_complaint(road_complaint)
+    assert road_res.category == "Roads & Potholes"
+    assert road_res.department == "Public Works"
+
+    # Electricity Hinglish
+    elec_complaint = {
+        "title": "Transformer se sparks aur bijli gul",
+        "description": "Transformer kharab ho gaya hai, bijli chali gayi hai aur khula taar latak raha hai.",
+        "language": "hinglish",
+    }
+    elec_res = classifier.classify_complaint(elec_complaint)
+    assert elec_res.category == "Electricity"
+    assert elec_res.department == "Electricity Board"
+
+    # Sanitation & Waste Hinglish
+    san_complaint = {
+        "title": "Kachra aur kooda ka dher",
+        "description": "Colony mein kachre ka dher laga hai aur bahut gandi badboo aa rahi hai, safai nahi hui.",
+        "language": "hinglish",
+    }
+    san_res = classifier.classify_complaint(san_complaint)
+    assert san_res.category == "Sanitation & Waste"
+    assert san_res.department == "Sanitation Department"
+
+    # Street Lighting Hinglish
+    light_complaint = {
+        "title": "Street light band hai andhera",
+        "description": "Sadak ki street light kharab hai aur pura andhera rehta hai.",
+        "language": "hinglish",
+    }
+    light_res = classifier.classify_complaint(light_complaint)
+    assert light_res.category == "Street Lighting"
+    assert light_res.department == "Street Lighting Division"
+
+    # Drainage Hinglish
+    drain_complaint = {
+        "title": "Band naali aur ganda nala overflow",
+        "description": "Naali band hone se sadak par ganda paani overflow ho raha hai jalbharav ho gaya.",
+        "language": "hinglish",
+    }
+    drain_res = classifier.classify_complaint(drain_complaint)
+    assert drain_res.category == "Drainage"
+    assert drain_res.department == "Drainage & Sewerage"
+
+
 def test_classification_water_complaint(classifier: MLClassificationService):
     complaint = {
         "title": "Burst pipeline flooding the street",

@@ -1,9 +1,9 @@
 """Multilingual keyword databases for complaint classification.
 
-Supported languages: English (en), Hindi (hi), Tamil (ta), Bengali (bn),
-Marathi (mr).
+Supported languages: English (en), Hindi (hi), Hinglish (hinglish), Tamil (ta),
+Bengali (bn), Marathi (mr).
 
-Each category has keyword lists per language.  The keyword provider matches
+Each category has keyword lists per language. The keyword provider matches
 these against complaint text (case-insensitive for Latin script, literal
 match for other scripts) to determine category, severity, and sensitive
 location indicators.
@@ -27,6 +27,13 @@ CATEGORY_KEYWORDS: dict[str, dict[str, list[str]]] = {
             "सड़क", "गड्ढा", "गड्ढे", "टूटी सड़क", "खराब सड़क",
             "पुल", "फुटपाथ", "फ्लाईओवर", "स्पीड ब्रेकर",
             "मैनहोल", "दरार",
+        ],
+        "hinglish": [
+            "sadak", "sarak", "gaddha", "gaddhe", "gaddhae", "tooti sadak",
+            "tuti sadak", "kharaab sadak", "kharab sadak", "pothole", "potholes",
+            "footpath", "pul", "bridge", "flyover", "divider", "speed breaker",
+            "manhole", "rasta", "raasta", "toota rasta", "khadde", "khadda",
+            "asphalt", "pavement",
         ],
         "ta": [
             "சாலை", "குழி", "குழிகள்", "பாலம்", "நடைபாதை",
@@ -53,6 +60,14 @@ CATEGORY_KEYWORDS: dict[str, dict[str, list[str]]] = {
             "पानी", "नल", "पाइप", "पाइपलाइन", "लीक", "रिसाव",
             "जलापूर्ति", "टंकी", "बोरवेल", "पेयजल",
             "गंदा पानी", "पानी की कमी", "पानी नहीं",
+        ],
+        "hinglish": [
+            "paani", "pani", "pipeline", "nal", "pipe", "paani nahi",
+            "pani nahi", "paani supply", "pani supply", "ganda paani",
+            "ganda pani", "tanker", "borewell", "peeyajal", "peene ka paani",
+            "peene ka pani", "paani ki kami", "pani ki kami", "leak", "leaking",
+            "paani leak", "pani leak", "paani waste", "pani waste", "motor",
+            "water meter", "water shortage", "drinking water", "paani connection",
         ],
         "ta": [
             "தண்ணீர்", "குழாய்", "கசிவு", "நீர் வழங்கல்",
@@ -82,6 +97,13 @@ CATEGORY_KEYWORDS: dict[str, dict[str, list[str]]] = {
             "लोड शेडिंग", "बिजली का तार", "स्पार्किंग",
             "खुला तार", "फ्यूज", "बिजली का झटका",
         ],
+        "hinglish": [
+            "bijli", "light", "taar", "wire", "power cut", "khamba",
+            "bijli ka khamba", "bijli gul", "bijli chali gayi", "short circuit",
+            "current", "transformer", "load shedding", "sparking", "khula taar",
+            "khula wire", "fuse", "voltage", "bijli ka jhatka", "andhera",
+            "power line", "cable", "electrical", "blackout",
+        ],
         "ta": [
             "மின்சாரம்", "மின்வெட்டு", "மின்மாற்றி",
             "மின்னழுத்தம்", "மின்கம்பம்", "மின்கசிவு",
@@ -89,7 +111,7 @@ CATEGORY_KEYWORDS: dict[str, dict[str, list[str]]] = {
         ],
         "bn": [
             "বিদ্যুৎ", "পাওয়ার কাট", "ট্রান্সফরমার", "ভোল্টেজ",
-            "শর্ট সার্কিট", "কারেন্ট", "বৈদ্যুতিক খুঁটি",
+            "শর্ট সার্কিট", "কারেন্ট", "বৈদ্যতিক খুঁটি",
             "লোড শেডিং", "খোলা তার", "বিদ্যুৎ স্পৃষ্ট",
         ],
         "mr": [
@@ -109,6 +131,13 @@ CATEGORY_KEYWORDS: dict[str, dict[str, list[str]]] = {
             "कूड़ा", "कचरा", "गंदगी", "सफाई", "कूड़ेदान",
             "डस्टबिन", "बदबू", "दुर्गंध", "अस्वच्छ",
             "कचरा संग्रह", "मलबा",
+        ],
+        "hinglish": [
+            "kachra", "kooda", "kuda", "gandagi", "safai", "dustbin",
+            "badboo", "durgandh", "kachre ka dher", "kude ka dher", "malba",
+            "kuda uthana", "kachra gadi", "safai karamchari", "kachra nahi uthaya",
+            "safai nahi hui", "stench", "smell", "kachra phekna", "garbage",
+            "trash", "waste", "unhygienic", "litter",
         ],
         "ta": [
             "குப்பை", "கழிவு", "தூய்மை", "அசுத்தம்",
@@ -135,6 +164,12 @@ CATEGORY_KEYWORDS: dict[str, dict[str, list[str]]] = {
             "खंभे की बत्ती", "टूटी लाइट", "लाइट बंद",
             "पथ प्रकाश", "रोशनी नहीं",
         ],
+        "hinglish": [
+            "street light", "streetlight", "sadak ki light", "light kharab",
+            "batti", "khambhe ki light", "andhera", "light band", "tooti light",
+            "tuti light", "light nahi jal rahi", "street light band hai", "bulb",
+            "lamp post", "dark street", "no light", "broken light", "light pole",
+        ],
         "ta": [
             "தெரு விளக்கு", "விளக்கு", "விளக்கு கம்பம்",
             "இருள்", "ஒளி இல்லை", "உடைந்த விளக்கு",
@@ -160,6 +195,13 @@ CATEGORY_KEYWORDS: dict[str, dict[str, list[str]]] = {
             "बंद नाली", "सीवेज", "गंदा नाला", "जमा पानी",
             "सेप्टिक", "ड्रेनेज",
         ],
+        "hinglish": [
+            "naali", "nali", "nala", "naala", "gutter", "sewer", "sewage",
+            "jalbharav", "waterlogging", "paani bharna", "pani bharna",
+            "band naali", "band nali", "ganda nala", "ganda naala", "overflow",
+            "naali overflow", "septic", "stagnant water", "choked drain",
+            "drain", "drainage", "clogged", "blocked drain",
+        ],
         "ta": [
             "வடிகால்", "சாக்கடை", "அடைப்பு", "கழிவுநீர்",
             "தேங்கிய நீர்", "நீர்த்தேக்கம்",
@@ -184,6 +226,12 @@ CATEGORY_KEYWORDS: dict[str, dict[str, list[str]]] = {
             "असुरक्षित", "खतरनाक", "खतरा", "चोरी", "लूट",
             "हमला", "दुर्घटना", "आपातकाल", "आग", "ढहना",
             "जोखिम", "हिंसा", "तोड़फोड़", "संदिग्ध", "धमकी",
+        ],
+        "hinglish": [
+            "khatra", "khatarnaak", "chori", "loot", "hamla", "durghatna",
+            "accident", "aag", "fire", "girna", "dhasna", "unsafe", "dangerous",
+            "dhamki", "hungama", "violence", "emergency", "jaanleva", "hazard",
+            "threat", "security", "robbery",
         ],
         "ta": [
             "ஆபத்து", "ஆபத்தான", "திருட்டு", "தாக்குதல்",
@@ -223,6 +271,13 @@ SEVERITY_KEYWORDS: dict[str, list[str]] = {
         "खतरनाक", "आपातकाल", "तत्काल", "गंभीर", "जानलेवा",
         "सड़क बंद", "प्रदूषण", "जहरीला", "खुला मैनहोल",
     ],
+    "hinglish": [
+        "durghatna", "accident", "chot", "ghayal", "maut", "mrityu", "dead",
+        "death", "aag", "fire", "current", "bijli ka jhatka", "khula taar",
+        "khula wire", "baadh", "flooding", "khatarnaak", "emergency", "urgent",
+        "critical", "severe", "khula manhole", "jaanleva", "life threatening",
+        "collapse", "gir gaya", "hazard",
+    ],
     "ta": [
         "விபத்து", "காயம்", "இறப்பு", "தீ", "வெடிப்பு",
         "இடிவு", "மின்அதிர்ச்சி", "வெள்ளம்",
@@ -230,7 +285,7 @@ SEVERITY_KEYWORDS: dict[str, list[str]] = {
     ],
     "bn": [
         "দুর্ঘটনা", "আঘাত", "আহত", "মৃত্যু", "মৃত",
-        "আগুন", "বিস্ফোরণ", "ধসে পড়া", "বিদ্যুৎ স্পৃষ্ট",
+        "আগুন", "বিস্ফোরণ", "ধসে পড়া", "বিদ্যুৎ ஸ்பৃষ্ট",
         "বন্যা", "জলাবদ্ধতা",
         "বিপজ্জনক", "জরুরি", "গুরুতর", "প্রাণঘাতী",
     ],
@@ -257,6 +312,12 @@ SENSITIVE_LOCATION_KEYWORDS: dict[str, list[str]] = {
         "स्कूल", "अस्पताल", "मंदिर", "मस्जिद", "गिरजाघर",
         "गुरुद्वारा", "पार्क", "बाज़ार", "बस स्टॉप",
         "रेलवे", "स्टेशन", "बच्चे", "बुजुर्ग",
+    ],
+    "hinglish": [
+        "school", "hospital", "aspatal", "mandir", "masjid", "gurudwara",
+        "church", "park", "bazaar", "bazar", "market", "bus stop", "busstop",
+        "station", "railway", "bacche", "bache", "bujurg", "elderly", "college",
+        "university",
     ],
     "ta": [
         "பள்ளி", "மருத்துவமனை", "கோவில்", "மசூதி",
