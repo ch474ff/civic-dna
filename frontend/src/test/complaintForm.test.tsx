@@ -85,10 +85,10 @@ describe('Citizen Complaint Form & Receipt', () => {
 
     // Verify citizen-facing receipt contains expected routing details but no internal AI metrics
     await waitFor(() => {
-      expect(screen.getByText(/Grievance Registered Successfully/i)).toBeInTheDocument();
+      expect(screen.getByText(/Grievance registered/i)).toBeInTheDocument();
       expect(screen.getByText('cmp-101')).toBeInTheDocument();
       expect(screen.getByText('Water Department')).toBeInTheDocument();
-      expect(screen.getByText(/Your grievance has been registered and automatically routed/i)).toBeInTheDocument();
+      expect(screen.getByText(/Your grievance has been automatically reviewed and routed/i)).toBeInTheDocument();
     });
   });
 

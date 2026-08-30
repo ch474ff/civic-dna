@@ -93,51 +93,24 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
       </ol>
 
       {/* Mobile: compact */}
-      <div className="sm:hidden flex items-center gap-2">
-        {STEPS.map((step, idx) => {
-          const isCompleted = completedSteps.has(step.number) && step.number < currentStep;
-          const isCurrent = currentStep === step.number;
-          const isClickable = isCompleted || step.number <= currentStep;
-          const isLast = idx === STEPS.length - 1;
-
-          return (
-            <React.Fragment key={step.number}>
-              <button
-                type="button"
-                onClick={() => isClickable && onStepClick(step.number)}
-                disabled={!isClickable}
-                className="flex flex-col items-center gap-1 min-w-0"
-                aria-current={isCurrent ? 'step' : undefined}
-              >
-                <span
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold ${
-                    isCompleted
-                      ? 'bg-blue-100 border border-blue-200 text-blue-600'
-                      : isCurrent
-                      ? 'bg-blue-600 border border-blue-600 text-white'
-                      : 'bg-white text-slate-400 border-2 border-slate-200'
-                  }`}
-                >
-                  {isCompleted ? (
-                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                  ) : (
-                    step.number
-                  )}
-                </span>
-                <span
-                  className={`text-[10px] leading-tight text-center truncate max-w-[70px] ${
-                    isCurrent ? 'font-semibold text-blue-600' : isCompleted ? 'font-medium text-slate-700' : 'text-slate-400'
-                  }`}
-                >
-                  {isCompleted ? '✓ ' : ''}{step.label}
-                </span>
-              </button>
-              {!isLast && (
-                <div className={`flex-1 h-px mt-[-14px] ${isCompleted ? 'bg-blue-600' : 'bg-slate-200'}`} />
-              )}
-            </React.Fragment>
-          );
-        })}
+      <div className="sm:hidden flex flex-col gap-1.5 p-3 bg-slate-50 border border-slate-200 rounded-md">
+        <div className="flex justify-between items-center text-xs font-semibold text-slate-500">
+          <span>Step {currentStep} of {STEPS.length}</span>
+          <span className="text-blue-600 font-bold">{STEPS[currentStep - 1].label}</span>
+        </div>
+        <div className="flex gap-1 h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+          {STEPS.map((step) => {
+            const isCompletedOrCurrent = step.number <= currentStep;
+            return (
+              <div
+                key={step.number}
+                className={`flex-1 h-full transition-colors ${
+                  isCompletedOrCurrent ? 'bg-blue-600' : 'bg-slate-200'
+                }`}
+              />
+            );
+          })}
+        </div>
       </div>
     </nav>
   );

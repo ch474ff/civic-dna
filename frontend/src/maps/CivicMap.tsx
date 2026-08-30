@@ -16,6 +16,7 @@ L.Icon.Default.mergeOptions({
 const createPriorityIcon = (priorityScore: number, isHigh: boolean) => {
   const color = isHigh ? '#ef4444' : priorityScore >= 0.4 ? '#f59e0b' : '#10b981';
   const size = isHigh ? 36 : 28;
+  const symbol = isHigh ? '▲' : priorityScore >= 0.4 ? '●' : '■';
   return L.divIcon({
     className: 'custom-map-marker',
     html: `
@@ -31,10 +32,9 @@ const createPriorityIcon = (priorityScore: number, isHigh: boolean) => {
         justify-content: center;
         color: white;
         font-weight: bold;
-        font-size: ${isHigh ? '12px' : '10px'};
-        ${isHigh ? 'animation: pulse 2s infinite;' : ''}
+        font-size: ${isHigh ? '14px' : '10px'};
       ">
-        ${isHigh ? '!' : Math.round(priorityScore * 10)}
+        ${symbol}
       </div>
     `,
     iconSize: [size, size],

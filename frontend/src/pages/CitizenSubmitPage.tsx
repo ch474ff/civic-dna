@@ -109,7 +109,7 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
           setError(null);
         },
         () => {
-          setError('Could not retrieve GPS location. Please select on the map or enter coordinates.');
+          setError('Location permission was denied or GPS coordinates could not be retrieved. Please click the map or enter coordinates.');
         }
       );
     } else {
@@ -148,9 +148,22 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
 
     try {
       const result = await complaintService.createComplaint(payload);
+      
+      // Save ID locally for citizen tracking page list
+      try {
+        const saved = localStorage.getItem('my_grievances');
+        const ids = saved ? JSON.parse(saved) : [];
+        if (!ids.includes(result.complaint_id)) {
+          ids.push(result.complaint_id);
+          localStorage.setItem('my_grievances', JSON.stringify(ids));
+        }
+      } catch {
+        // Fallback for storage restricted environments
+      }
+
       setReceipt(result);
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError("We couldn't submit your grievance. Please check your network connection and try again.");
     } finally {
       setSubmitting(false);
     }
@@ -196,7 +209,7 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Grievance Registered Successfully</h2>
+                <h2 className="text-lg font-semibold text-slate-900">Grievance registered</h2>
                 <p className="text-sm text-slate-500">Your complaint has been logged in our system.</p>
               </div>
             </div>
@@ -226,7 +239,7 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
 
               {receipt.created_at && (
                 <div className="flex justify-between items-center py-1 border-t border-slate-100">
-                  <span className="text-slate-500 font-medium">Submitted Date</span>
+                  <span className="text-slate-500 font-medium">Submitted</span>
                   <span className="text-slate-800 font-medium">
                     {new Date(receipt.created_at).toLocaleString(undefined, {
                       dateStyle: 'medium',
@@ -238,16 +251,18 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
 
               {receipt.department && (
                 <div className="flex justify-between items-center py-1 border-t border-slate-100">
-                  <span className="text-slate-500 font-medium">Department Routed To</span>
+                  <span className="text-slate-500 font-medium">Department</span>
                   <span className="text-slate-800 font-semibold">{receipt.department}</span>
                 </div>
               )}
             </div>
 
             {/* Explanation of what happens next */}
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md flex items-start gap-2 text-xs text-blue-800">
-              <span className="font-semibold">ⓘ</span>
-              <span>Your grievance has been registered and automatically routed to the appropriate department.</span>
+            <div className="space-y-2 border-t border-slate-200 pt-4">
+              <h3 className="text-sm font-semibold text-slate-900">What happens next?</h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Your grievance has been automatically reviewed and routed to the appropriate department.
+              </p>
             </div>
 
             {/* Actions */}
@@ -408,64 +423,65 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
               </div>
 
               {/* Coordinates + detect */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label htmlFor="lat" className="civic-label">
-                    Latitude <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="lat"
-                    type="number"
-                    step="any"
-                    required
-                    value={lat}
-                    onChange={(e) => {
-                      setLat(parseFloat(e.target.value));
-                      setLocationConfirmed(true);
-                    }}
-                    className="civic-input font-mono text-xs"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="lng" className="civic-label">
-                    Longitude <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="lng"
-                    type="number"
-                    step="any"
-                    required
-                    value={lng}
-                    onChange={(e) => {
-                      setLng(parseFloat(e.target.value));
-                      setLocationConfirmed(true);
-                    }}
-                    className="civic-input font-mono text-xs"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <button
-                    type="button"
-                    onClick={handleUseCurrentLocation}
-                    className="civic-btn-secondary w-full"
-                  >
-                    <Navigation className="h-4 w-4 text-blue-600" />
-                    Detect my location
-                  </button>
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={handleUseCurrentLocation}
+                  className="civic-btn-secondary w-full justify-center py-2.5"
+                >
+                  <Navigation className="h-4 w-4 text-blue-600 mr-1.5" />
+                  Detect my location
+                </button>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="lat" className="civic-label">
+                      Latitude <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="lat"
+                      type="number"
+                      step="any"
+                      required
+                      value={lat}
+                      onChange={(e) => {
+                        setLat(parseFloat(e.target.value));
+                        setLocationConfirmed(true);
+                      }}
+                      className="civic-input font-mono text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="lng" className="civic-label">
+                      Longitude <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="lng"
+                      type="number"
+                      step="any"
+                      required
+                      value={lng}
+                      onChange={(e) => {
+                        setLng(parseFloat(e.target.value));
+                        setLocationConfirmed(true);
+                      }}
+                      className="civic-input font-mono text-xs"
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Location status */}
               <div className="flex items-center gap-2">
                 {locationConfirmed ? (
-                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 px-3 py-1 rounded-md">
-                    <CheckCircle2 className="h-4 w-4" />
+                  <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-green-700 bg-green-50 border border-green-200 px-3 py-1 rounded-md">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
                     Location confirmed — {lat.toFixed(4)}, {lng.toFixed(4)}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-md">
-                    <AlertTriangle className="h-4 w-4" />
-                    Location not confirmed — click the map, enter coordinates, or use GPS
+                  <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-md">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    Location not confirmed — click map or use GPS
                   </span>
                 )}
               </div>
@@ -473,9 +489,9 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
               {/* Map */}
               <div>
                 <label className="civic-label">Pin location on map</label>
-                <div className="border border-slate-300 rounded-lg overflow-hidden">
+                <div className="border border-slate-300 rounded-lg overflow-hidden h-[240px] sm:h-[400px]">
                   <CivicMap
-                    height="400px"
+                    height="100%"
                     selectedLocation={{ lat, lng }}
                     onLocationSelect={(newLat, newLng) => {
                       setLat(Number(newLat.toFixed(6)));
@@ -516,18 +532,18 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
 
             <div className="space-y-5">
               {/* Upload zone (visual placeholder) */}
-              <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
+              <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center bg-slate-50/50">
                 <Upload className="h-8 w-8 text-slate-400 mx-auto mb-2" />
-                <p className="text-sm font-medium text-slate-600">Drag files here or click to browse</p>
-                <p className="text-xs text-slate-400 mt-1">Up to 5 files · JPG, PNG, MP4 or PDF</p>
-                <p className="text-xs text-slate-400 mt-2 italic">File upload coming soon — use the URL option below</p>
+                <p className="text-sm font-semibold text-slate-700">Add a photo</p>
+                <p className="text-xs text-slate-400 mt-1">Up to 5 photos · JPG, PNG, or WEBP</p>
+                <p className="text-[11px] text-slate-400 mt-2 italic">Direct upload coming soon — use the URL input below</p>
               </div>
 
               {/* URL paste */}
               <div>
                 <label htmlFor="imageUrl" className="civic-label">
-                  <FileText className="h-4 w-4 inline mr-1" />
-                  Paste image URL
+                  <FileText className="h-4 w-4 inline mr-1 text-slate-500" />
+                  Add a photo via URL link
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -558,20 +574,43 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
               {/* Added URLs */}
               {images.length > 0 && (
                 <div className="space-y-2">
-                  <span className="text-xs font-medium text-slate-500">{images.length} file(s) attached</span>
-                  {images.map((img, idx) => (
-                    <div key={idx} className="flex items-center justify-between gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm">
-                      <span className="truncate max-w-[400px] text-slate-700 font-mono text-xs">{img}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(idx)}
-                        className="text-slate-400 hover:text-red-600 transition-colors p-1"
-                        aria-label={`Remove file ${idx + 1}`}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
+                  <span className="text-xs font-semibold text-slate-700">{images.length} file(s) attached</span>
+                  <div className="grid grid-cols-1 gap-2">
+                    {images.map((img, idx) => {
+                      const isImage = img.match(/\.(jpeg|jpg|gif|png|webp)/i) !== null || img.includes('photo') || img.includes('image');
+                      const extension = img.split('.').pop()?.split('?')[0]?.toUpperCase() || 'URL';
+                      const cleanName = img.substring(img.lastIndexOf('/') + 1) || img;
+
+                      return (
+                        <div key={idx} className="flex items-center justify-between gap-3 p-2 bg-slate-50 border border-slate-200 rounded-md">
+                          <div className="flex items-center gap-3 min-w-0">
+                            {/* Thumbnail */}
+                            <div className="w-10 h-10 rounded bg-slate-100 border border-slate-200 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                              {isImage ? (
+                                <img src={img} alt="Evidence thumbnail" className="w-full h-full object-cover" />
+                              ) : (
+                                <FileText className="h-5 w-5 text-slate-400" />
+                              )}
+                            </div>
+                            {/* Meta info */}
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-slate-700 truncate max-w-[250px]">{cleanName}</p>
+                              <p className="text-[10px] text-slate-400 font-mono mt-0.5">{extension} link &bull; External</p>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(idx)}
+                            className="text-slate-400 hover:text-red-600 transition-colors p-1"
+                            aria-label={`Remove file ${idx + 1}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -648,8 +687,8 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
               >
                 {submitting ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Processing...
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1.5" />
+                    Submitting your grievance…
                   </>
                 ) : (
                   'Submit Grievance'

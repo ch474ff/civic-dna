@@ -7,6 +7,8 @@ import { MapExplorePage } from './pages/MapExplorePage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { OfficerLoginPage } from './pages/OfficerLoginPage';
 import { OfficerDashboardPage } from './pages/OfficerDashboardPage';
+import { MyGrievancesPage } from './pages/MyGrievancesPage';
+import { Shield } from 'lucide-react';
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('submit');
@@ -31,9 +33,26 @@ const AppContent: React.FC = () => {
           <CitizenTrackPage initialComplaintId={trackComplaintId} />
         )}
 
+        {activeTab === 'my-grievances' && (
+          <MyGrievancesPage
+            onNavigateToTrack={handleNavigateToTrack}
+            onNavigateToSubmit={() => setActiveTab('submit')}
+          />
+        )}
+
         {activeTab === 'map' && <MapExplorePage />}
 
-        {activeTab === 'analytics' && <AnalyticsPage />}
+        {activeTab === 'analytics' && (
+          isAuthenticated ? (
+            <AnalyticsPage />
+          ) : (
+            <div className="max-w-md mx-auto mt-12 p-6 bg-white border border-slate-200 rounded-lg text-center space-y-3">
+              <Shield className="h-8 w-8 text-amber-500 mx-auto" />
+              <h3 className="font-bold text-slate-800">Restricted Access</h3>
+              <p className="text-xs text-slate-500">This operational analytics dashboard is restricted to authorized municipal officers.</p>
+            </div>
+          )
+        )}
 
         {activeTab === 'login' && (
           <OfficerLoginPage
