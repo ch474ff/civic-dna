@@ -3,15 +3,11 @@ import { Cluster, ClusterPatch, EscalationItem } from '../types';
 
 export const clusterService = {
   listClusters: async (sort: 'priority_desc' | 'priority_asc' = 'priority_desc'): Promise<Cluster[]> => {
-    return apiClient.get<Cluster[]>(`/api/clusters?sort=${sort}`, {
-      requiresAuth: true,
-    });
+    return apiClient.get<Cluster[]>(`/api/clusters?sort=${sort}`);
   },
 
   getCluster: async (clusterId: string): Promise<Cluster> => {
-    return apiClient.get<Cluster>(`/api/clusters/${encodeURIComponent(clusterId)}`, {
-      requiresAuth: true,
-    });
+    return apiClient.get<Cluster>(`/api/clusters/${encodeURIComponent(clusterId)}`);
   },
 
   patchCluster: async (clusterId: string, payload: ClusterPatch): Promise<Cluster> => {
@@ -21,8 +17,6 @@ export const clusterService = {
   },
 
   getEscalations: async (): Promise<EscalationItem[]> => {
-    return apiClient.get<EscalationItem[]>('/api/clusters/escalations', {
-      requiresAuth: true,
-    });
+    return apiClient.get<EscalationItem[]>('/api/clusters/escalations');
   },
 };
