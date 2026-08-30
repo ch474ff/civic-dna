@@ -22,6 +22,7 @@ export interface ComplaintResponse {
   confidence: number;
   extracted_severity_keywords: string[];
   cluster_id: string | null;
+  created_at: string;
 }
 
 export type Complaint = ComplaintResponse;
@@ -39,6 +40,13 @@ export interface ClusterResponse {
 }
 
 export type Cluster = ClusterResponse;
+
+export interface EscalationItem {
+  cluster_id: string;
+  level: 'normal' | 'warning' | 'overdue';
+  sla_deadline: string;
+  hours_remaining: number;
+}
 
 export interface ClusterPatch {
   status?: string;

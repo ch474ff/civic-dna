@@ -1,8 +1,8 @@
 import { apiClient } from './api';
-import { Cluster, ClusterPatch } from '../types';
+import { Cluster, ClusterPatch, EscalationItem } from '../types';
 
 export const clusterService = {
-  listClusters: async (sort: 'priority' | '-priority' = 'priority'): Promise<Cluster[]> => {
+  listClusters: async (sort: 'priority_desc' | 'priority_asc' = 'priority_desc'): Promise<Cluster[]> => {
     return apiClient.get<Cluster[]>(`/api/clusters?sort=${sort}`);
   },
 
@@ -14,5 +14,9 @@ export const clusterService = {
     return apiClient.patch<Cluster>(`/api/clusters/${encodeURIComponent(clusterId)}`, payload, {
       requiresAuth: true,
     });
+  },
+
+  getEscalations: async (): Promise<EscalationItem[]> => {
+    return apiClient.get<EscalationItem[]>('/api/clusters/escalations');
   },
 };

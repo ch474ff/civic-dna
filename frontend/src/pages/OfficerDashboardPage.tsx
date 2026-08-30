@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { clusterService } from '../services/clusterService';
 import { complaintService } from '../services/complaintService';
-import { Cluster, Complaint } from '../types';
+import { Cluster, Complaint, EscalationItem } from '../types';
 import { PriorityBadge } from '../components/PriorityBadge';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ClusterEditModal } from '../dashboard/ClusterEditModal';
@@ -22,12 +22,13 @@ export const OfficerDashboardPage: React.FC = () => {
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [escalations, setEscalations] = useState<Record<string, EscalationItem>>({});
   
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [departmentFilter, setDepartmentFilter] = useState('all');
-  const [sortOrder, setSortOrder] = useState<'priority' | '-priority'>('priority');
+  const [sortOrder, setSortOrder] = useState<'priority_desc' | 'priority_asc'>('priority_desc');
 
   // Modals & Drawers
   const [editingCluster, setEditingCluster] = useState<Cluster | null>(null);
@@ -48,8 +49,22 @@ export const OfficerDashboardPage: React.FC = () => {
     }
   };
 
+  const fetchEscalations = async () => {
+    try {
+      const items = await clusterService.getEscalations();
+      const map: Record<string, EscalationItem> = {};
+      for (const item of items) {
+        map[item.cluster_id] = item;
+      }
+      setEscalations(map);
+    } catch {
+      // Fallback to client-side SLA calculation if endpoint fails
+    }
+  };
+
   useEffect(() => {
     fetchClusters();
+    fetchEscalations();
   }, [sortOrder]);
 
   const handleInspect = async (cluster: Cluster) => {
@@ -83,6 +98,27 @@ export const OfficerDashboardPage: React.FC = () => {
     return true;
   });
 
+  const getEscalationBadge = (clusterId: string, slaDeadline: string) => {
+    const esc = escalations[clusterId];
+    if (esc) {
+      const levelClass =
+        esc.level === 'overdue'
+          ? 'bg-red-100 text-red-800 border-red-300'
+          : esc.level === 'warning'
+            ? 'bg-amber-100 text-amber-800 border-amber-300'
+            : 'bg-emerald-100 text-emerald-800 border-emerald-300';
+      const label =
+        esc.level === 'overdue'
+          ? `Overdue by ${Math.abs(Math.round(esc.hours_remaining))}h`
+          : esc.level === 'warning'
+            ? `${Math.round(esc.hours_remaining)}h remaining (Urgent)`
+            : `${Math.round(esc.hours_remaining)}h remaining`;
+      return { text: label, badgeClass: levelClass };
+    }
+    // Fallback to client-side calculation
+    return calculateSlaStatus(slaDeadline);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
       {/* Header */}
@@ -99,14 +135,14 @@ export const OfficerDashboardPage: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setSortOrder(sortOrder === 'priority' ? '-priority' : 'priority')}
+            onClick={() => setSortOrder(sortOrder === 'priority_desc' ? 'priority_asc' : 'priority_desc')}
             className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5"
           >
             <ArrowUpDown className="h-3.5 w-3.5 text-sky-400" />
-            Sort: {sortOrder === 'priority' ? 'Highest Priority First' : 'Lowest Priority First'}
+            Sort: {sortOrder === 'priority_desc' ? 'Highest Priority First' : 'Lowest Priority First'}
           </button>
           <button
-            onClick={fetchClusters}
+            onClick={() => { fetchClusters(); fetchEscalations(); }}
             className="px-3.5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -193,7 +229,7 @@ export const OfficerDashboardPage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredClusters.map((cl) => {
-                  const sla = calculateSlaStatus(cl.sla_deadline);
+                  const sla = getEscalationBadge(cl.cluster_id, cl.sla_deadline);
                   return (
                     <tr 
                       key={cl.cluster_id} 

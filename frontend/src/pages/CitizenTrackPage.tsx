@@ -137,6 +137,11 @@ export const CitizenTrackPage: React.FC<CitizenTrackPageProps> = ({ initialCompl
                 <span className="text-xs text-slate-400 capitalize">
                   Language: {complaint.language}
                 </span>
+                {complaint.created_at && (
+                  <span className="text-xs text-slate-400">
+                    Filed on {formatDate(complaint.created_at)}
+                  </span>
+                )}
               </div>
               <h3 className="text-xl font-bold mt-1 text-white">{complaint.title}</h3>
             </div>

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime, timedelta
@@ -13,7 +13,7 @@ from app.schemas import ComplaintCreate
 from app.services.classification import ClassificationResult, ClassificationService
 from app.services.deduplication import DeduplicationService
 from app.services.scoring import ScoringService
-from app.services.sla import calculate_sla
+from app.services.ml.sla import get_sla_deadline
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,7 @@ def _complaint_snapshot(complaint: Complaint) -> dict[str, Any]:
         "confidence": complaint.confidence,
         "extracted_severity_keywords": complaint.extracted_severity_keywords or [],
         "cluster_id": complaint.cluster_id,
+        "created_at": complaint.created_at.isoformat() if hasattr(complaint, "created_at") and complaint.created_at else None,
     }
 
 
@@ -97,7 +98,7 @@ def process_complaint(
         priority_score = 0.5
 
     try:
-        sla_deadline = calculate_sla(priority_score)
+        sla_deadline = get_sla_deadline(priority_score, department=classified.department)
     except Exception:
         logger.exception("SLA calculation failed; using 72h fallback")
         sla_deadline = datetime.now(UTC) + timedelta(hours=72)
@@ -143,6 +144,7 @@ def process_complaint(
         confidence=classified.confidence,
         extracted_severity_keywords=list(classified.extracted_severity_keywords or []),
         cluster_id=cluster.cluster_id,
+        created_at=datetime.fromisoformat(draft["created_at"]) if isinstance(draft.get("created_at"), str) else (draft.get("created_at") or datetime.now(UTC)),
     )
     db.add(complaint)
     db.commit()

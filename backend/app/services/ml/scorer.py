@@ -17,6 +17,7 @@ All factors are in [0, 1].  The final score is clamped to [0, 1].
 
 from __future__ import annotations
 
+import re
 from typing import Any, Mapping
 
 from app.services.ml.config import (
@@ -28,6 +29,14 @@ from app.services.ml.config import (
 )
 from app.services.ml.keywords import SENSITIVE_LOCATION_KEYWORDS, SEVERITY_KEYWORDS
 from app.services.scoring import ScoringService
+
+
+def _matches_keyword(keyword: str, text_lower: str) -> bool:
+    """Match keyword using word-boundary regex for Latin script and substring match for other scripts."""
+    kw_lower = keyword.lower()
+    if kw_lower.isascii():
+        return bool(re.search(r"\b" + re.escape(kw_lower) + r"\b", text_lower))
+    return kw_lower in text_lower
 
 
 class MLScoringService(ScoringService):
@@ -69,7 +78,7 @@ class MLScoringService(ScoringService):
         for _lang, keywords in SEVERITY_KEYWORDS.items():
             for kw in keywords:
                 kw_lower = kw.lower()
-                if kw_lower not in seen and kw_lower in text_lower:
+                if kw_lower not in seen and _matches_keyword(kw, text_lower):
                     hits += 1
                     seen.add(kw_lower)
         # 3 severity keywords → factor = 1.0
@@ -88,7 +97,7 @@ class MLScoringService(ScoringService):
         for _lang, keywords in SENSITIVE_LOCATION_KEYWORDS.items():
             for kw in keywords:
                 kw_lower = kw.lower()
-                if kw_lower not in seen and kw_lower in text_lower:
+                if kw_lower not in seen and _matches_keyword(kw, text_lower):
                     hits += 1
                     seen.add(kw_lower)
         # 1+ location keywords → factor = 1.0

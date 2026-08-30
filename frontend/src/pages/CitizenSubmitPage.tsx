@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { complaintService } from '../services/complaintService';
 import { ComplaintCreate, Complaint } from '../types';
 import { CivicMap } from '../maps/CivicMap';
@@ -14,7 +14,9 @@ import {
   Plus, 
   Trash2,
   Navigation,
-  Globe
+  Globe,
+  MapPin,
+  AlertTriangle
 } from 'lucide-react';
 
 interface CitizenSubmitPageProps {
@@ -27,6 +29,7 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
   const [language, setLanguage] = useState('en');
   const [lat, setLat] = useState<number>(28.6139);
   const [lng, setLng] = useState<number>(77.2090);
+  const [locationConfirmed, setLocationConfirmed] = useState<boolean>(false);
   const [imageUrl, setImageUrl] = useState('');
   const [images, setImages] = useState<string[]>([]);
   
@@ -34,6 +37,22 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
   const [error, setError] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<Complaint | null>(null);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setLat(Number(pos.coords.latitude.toFixed(6)));
+          setLng(Number(pos.coords.longitude.toFixed(6)));
+          setLocationConfirmed(true);
+        },
+        () => {
+          // Fall back to Delhi default if denied or unavailable, locationConfirmed remains false
+        },
+        { timeout: 5000 }
+      );
+    }
+  }, []);
 
   const handleAddImage = () => {
     if (imageUrl.trim()) {
@@ -47,16 +66,20 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
   };
 
   const handleUseCurrentLocation = () => {
-    if (navigator.geolocation) {
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setLat(pos.coords.latitude);
-          setLng(pos.coords.longitude);
+          setLat(Number(pos.coords.latitude.toFixed(6)));
+          setLng(Number(pos.coords.longitude.toFixed(6)));
+          setLocationConfirmed(true);
+          setError(null);
         },
         () => {
           setError('Could not retrieve GPS location. Please select on the map or enter coordinates.');
         }
       );
+    } else {
+      setError('Geolocation is not supported by your browser.');
     }
   };
 
@@ -64,6 +87,10 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
     e.preventDefault();
     if (!title.trim() || !description.trim()) {
       setError('Please provide a title and detailed description.');
+      return;
+    }
+    if (!locationConfirmed) {
+      setError('Location not confirmed — click map or use GPS to confirm incident location.');
       return;
     }
     if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
@@ -108,6 +135,7 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
     setImageUrl('');
     setReceipt(null);
     setError(null);
+    setLocationConfirmed(false);
   };
 
   return (
@@ -164,7 +192,7 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Language Detected:</span>
+                    <span className="text-slate-500">Submission Language:</span>
                     <span className="font-medium text-slate-700 uppercase">{receipt.language}</span>
                   </div>
                 </div>
@@ -358,9 +386,22 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
               {/* Right Column: GIS Coordinates & Map Picker */}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                    GIS Coordinates (Lat, Lng) <span className="text-red-500">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                      GIS Coordinates <span className="text-red-500">*</span>
+                    </label>
+                    {locationConfirmed ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                        Location Confirmed
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                        <AlertTriangle className="h-3 w-3 text-amber-600" />
+                        Location not confirmed
+                      </span>
+                    )}
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <span className="text-[10px] text-slate-500 font-medium">Latitude:</span>
@@ -369,7 +410,10 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
                         step="any"
                         required
                         value={lat}
-                        onChange={(e) => setLat(parseFloat(e.target.value))}
+                        onChange={(e) => {
+                          setLat(parseFloat(e.target.value));
+                          setLocationConfirmed(true);
+                        }}
                         className="w-full text-xs font-mono rounded-lg border border-slate-300 px-2 py-1.5 focus:ring-2 focus:ring-sky-500 focus:outline-none"
                       />
                     </div>
@@ -380,7 +424,10 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
                         step="any"
                         required
                         value={lng}
-                        onChange={(e) => setLng(parseFloat(e.target.value))}
+                        onChange={(e) => {
+                          setLng(parseFloat(e.target.value));
+                          setLocationConfirmed(true);
+                        }}
                         className="w-full text-xs font-mono rounded-lg border border-slate-300 px-2 py-1.5 focus:ring-2 focus:ring-sky-500 focus:outline-none"
                       />
                     </div>
@@ -388,13 +435,20 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
                 </div>
 
                 <div>
-                  <span className="text-xs text-slate-500 block mb-1">Interactive Map Pinpoint:</span>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-slate-500">Interactive Map Pinpoint:</span>
+                    {!locationConfirmed && (
+                      <span className="text-[10px] text-amber-700 font-medium">Click map or use GPS</span>
+                    )}
+                  </div>
                   <CivicMap
                     height="240px"
                     selectedLocation={{ lat, lng }}
                     onLocationSelect={(newLat, newLng) => {
                       setLat(Number(newLat.toFixed(6)));
                       setLng(Number(newLng.toFixed(6)));
+                      setLocationConfirmed(true);
+                      setError(null);
                     }}
                     showFilters={false}
                   />

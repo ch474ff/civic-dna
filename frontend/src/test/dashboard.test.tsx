@@ -50,6 +50,7 @@ describe('Officer Dashboard & Token Command', () => {
     ];
 
     vi.spyOn(clusterService, 'listClusters').mockResolvedValue(mockClusters);
+    vi.spyOn(clusterService, 'getEscalations').mockResolvedValue([]);
 
     const { unmount } = render(<OfficerDashboardPage />);
 
@@ -107,6 +108,7 @@ describe('Officer Dashboard & Token Command', () => {
     };
 
     vi.spyOn(clusterService, 'listClusters').mockResolvedValue(mockClusters);
+    vi.spyOn(clusterService, 'getEscalations').mockResolvedValue([]);
     const patchSpy = vi.spyOn(clusterService, 'patchCluster').mockResolvedValue(mockPatched);
 
     const { unmount } = render(<OfficerDashboardPage />);

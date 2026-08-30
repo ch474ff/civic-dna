@@ -1,7 +1,9 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from unittest.mock import Mock
 
 from fastapi.testclient import TestClient
+
+from app.services.deduplication import MultiSignalDeduplicationService
 
 VALID_COMPLAINT = {
     "title": "Broken streetlight on Main St",
@@ -35,6 +37,8 @@ def test_valid_complaint_creation(client: TestClient):
     assert body["category"] == "unclassified"
     assert body["images"] == VALID_COMPLAINT["images"]
     assert body["language"] == "en"
+    assert "created_at" in body
+    assert datetime.fromisoformat(body["created_at"].replace("Z", "+00:00")).tzinfo is not None
 
 
 def test_invalid_complaint(client: TestClient):
@@ -67,7 +71,7 @@ def test_new_cluster_creation(client: TestClient):
     second_payload = {**VALID_COMPLAINT, "title": "Pothole on 2nd Ave", "lat": 19.07, "lng": 72.87}
     second = client.post("/api/complaints", json=second_payload).json()
     assert first["cluster_id"] != second["cluster_id"]
-    listing = client.get("/api/clusters?sort=priority")
+    listing = client.get("/api/clusters?sort=priority_desc")
     assert listing.status_code == 200
     assert len(listing.json()) == 2
 
@@ -158,3 +162,63 @@ def test_health_check(client: TestClient):
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+def test_escalations_endpoint(client: TestClient):
+    client.post("/api/complaints", json=VALID_COMPLAINT)
+    response = client.get("/api/clusters/escalations")
+    assert response.status_code == 200
+    body = response.json()
+    assert isinstance(body, list)
+    assert len(body) >= 1
+    item = body[0]
+    assert "cluster_id" in item
+    assert item["level"] in ("normal", "warning", "overdue")
+    assert "hours_remaining" in item
+    assert "sla_deadline" in item
+
+
+def test_temporal_deduplication_behavior():
+    service = MultiSignalDeduplicationService(
+        threshold=0.65,
+        temporal_window_hours=72.0,
+    )
+    now = datetime.now(UTC)
+    existing = [
+        {
+            "complaint_id": "c-old",
+            "cluster_id": "clust-1",
+            "title": "Broken streetlight on Main St",
+            "description": "The light has been out for three nights near the intersection.",
+            "lat": 28.6139,
+            "lng": 77.2090,
+            "department": "Electricity Board",
+            "category": "Street Lighting",
+            "created_at": (now - timedelta(hours=100)).isoformat(),
+        }
+    ]
+    # Complaint 100 hours after the old one — should not be merged (temporal score 0.0)
+    incoming_after_100h = {
+        "complaint_id": "c-new-100",
+        "cluster_id": None,
+        "title": "Broken streetlight on Main St",
+        "description": "The light has been out for three nights near the intersection.",
+        "lat": 28.6139,
+        "lng": 77.2090,
+        "department": "Electricity Board",
+        "category": "Street Lighting",
+        "created_at": now.isoformat(),
+    }
+    # 100h apart should fail threshold or not merge
+    breakdown_100h = service.score_pair(incoming_after_100h, existing[0])
+    assert breakdown_100h.temporal_score == 0.0
+
+    # Complaint 1 hour after — should merge (high temporal score)
+    existing_recent = [
+        {
+            **existing[0],
+            "created_at": (now - timedelta(hours=1)).isoformat(),
+        }
+    ]
+    matched_id = service.find_duplicate_cluster(incoming_after_100h, existing_recent)
+    assert matched_id == "clust-1"

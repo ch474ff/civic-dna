@@ -27,7 +27,7 @@ export const MapExplorePage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const clusterList = await clusterService.listClusters('priority');
+      const clusterList = await clusterService.listClusters('priority_desc');
       setClusters(clusterList);
 
       // Fetch individual complaints for members

@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     officer_bootstrap_username: str | None = "officer"
     officer_bootstrap_password: str | None = "changeme"
     civic_create_tables: bool = False
+    cors_allowed_origins: list[str] = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+    ]
 
     # Deduplication and clustering configuration
     dedup_threshold: float = 0.65
