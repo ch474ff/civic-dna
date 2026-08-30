@@ -6,12 +6,9 @@ import { getErrorMessage } from '../utils/error';
 import { formatPercent } from '../utils/formatters';
 import { 
   Send, 
-  MapPin, 
   CheckCircle2, 
   Copy, 
   Layers, 
-  Tag, 
-  Building, 
   Sparkles, 
   AlertCircle, 
   Plus, 
@@ -122,7 +119,7 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
             <CheckCircle2 className="h-16 w-16 mx-auto mb-2 text-emerald-100 animate-bounce" />
             <h2 className="text-2xl font-bold">Grievance Registered Successfully</h2>
             <p className="text-emerald-100 text-sm mt-1">
-              Your issue has passed real-time ML classification and deduplication clustering.
+              Your issue has passed real-time ML classification and deduplication into municipal tokens.
             </p>
           </div>
 
@@ -176,11 +173,11 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
               <div className="border border-slate-200 rounded-xl p-4 bg-indigo-50/50 space-y-3">
                 <div className="flex items-center gap-2 text-indigo-800 font-semibold text-sm">
                   <Layers className="h-4 w-4 text-indigo-600" />
-                  <span>Cluster & Deduplication Status</span>
+                  <span>Token & Deduplication Status</span>
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Assigned Cluster ID:</span>
+                    <span className="text-slate-500">Assigned Token ID:</span>
                     <span className="font-mono text-xs font-semibold text-indigo-900">
                       {receipt.cluster_id ? `${receipt.cluster_id}` : 'Pending Graph Batch'}
                     </span>
@@ -233,7 +230,7 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
             <div>
               <h2 className="text-xl font-bold">Lodge Citizen Grievance</h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                AI pipeline automatically scores severity, determines department routing, and clusters duplicate incidents.
+                AI pipeline automatically scores severity, determines department routing, and groups duplicate incidents into tokens.
               </p>
             </div>
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-slate-800 text-sky-400 border border-sky-500/30 rounded-lg text-xs font-medium">

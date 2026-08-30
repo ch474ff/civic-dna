@@ -6,18 +6,14 @@ import { PriorityBadge } from '../components/PriorityBadge';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ClusterEditModal } from '../dashboard/ClusterEditModal';
 import { calculateSlaStatus } from '../utils/sla';
-import { formatDate } from '../utils/formatters';
 import { getErrorMessage } from '../utils/error';
 import { 
   Shield, 
-  Filter, 
   Search, 
   Edit3, 
   Eye, 
   Layers, 
-  Building, 
   ArrowUpDown, 
-  CheckCircle,
   RefreshCw,
   X
 } from 'lucide-react';
@@ -94,10 +90,10 @@ export const OfficerDashboardPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <Shield className="h-6 w-6 text-sky-400" />
-            <h2 className="text-xl font-bold">Officer Incident Triage & Cluster Command</h2>
+            <h2 className="text-xl font-bold">Officer Incident Triage & Token Command</h2>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Real-time graph clusters, multi-signal priority scores, and municipal SLA monitoring.
+            Real-time graph tokens, multi-signal priority tiers, and municipal SLA monitoring.
           </p>
         </div>
 
@@ -127,7 +123,7 @@ export const OfficerDashboardPage: React.FC = () => {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search Cluster ID or Asset..."
+            placeholder="Search Token ID or Asset..."
             className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none"
           />
         </div>
@@ -169,15 +165,15 @@ export const OfficerDashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* Cluster Table */}
+      {/* Token Table */}
       {loading ? (
         <div className="bg-white rounded-xl p-12 border border-slate-200 shadow">
-          <LoadingSpinner message="Fetching live clusters from backend..." />
+          <LoadingSpinner message="Fetching live tokens from backend..." />
         </div>
       ) : filteredClusters.length === 0 ? (
         <div className="bg-white rounded-xl p-12 text-center border border-slate-200 shadow">
           <Layers className="h-10 w-10 text-slate-300 mx-auto mb-2" />
-          <h4 className="font-semibold text-slate-700">No Clusters Match Filters</h4>
+          <h4 className="font-semibold text-slate-700">No Tokens Match Filters</h4>
           <p className="text-xs text-slate-500 mt-1">Try resetting filters or submitting a new grievance.</p>
         </div>
       ) : (
@@ -186,7 +182,7 @@ export const OfficerDashboardPage: React.FC = () => {
             <table className="w-full text-left text-xs text-slate-600">
               <thead className="bg-slate-50 text-slate-700 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200">
                 <tr>
-                  <th className="py-3.5 px-4">Cluster ID</th>
+                  <th className="py-3.5 px-4">Token ID</th>
                   <th className="py-3.5 px-4">Grievance Count</th>
                   <th className="py-3.5 px-4">Department</th>
                   <th className="py-3.5 px-4">Priority Tier</th>
@@ -262,7 +258,7 @@ export const OfficerDashboardPage: React.FC = () => {
           <div className="flex justify-between items-center pb-3 border-b border-slate-200">
             <div>
               <h3 className="font-bold text-slate-900 text-base">
-                Cluster Members: <span className="font-mono text-indigo-600">{inspectingCluster.cluster_id}</span>
+                Token Members: <span className="font-mono text-indigo-600">{inspectingCluster.cluster_id}</span>
               </h3>
               <p className="text-xs text-slate-500">
                 {inspectingCluster.member_complaint_ids.length} deduplicated grievances grouped by multi-signal similarity.

@@ -6,7 +6,7 @@ import { PriorityBadge } from '../components/PriorityBadge';
 import { CivicMap } from '../maps/CivicMap';
 import { FeedbackModal } from '../components/FeedbackModal';
 import { calculateSlaStatus } from '../utils/sla';
-import { formatDate, formatPercent } from '../utils/formatters';
+import { formatDate } from '../utils/formatters';
 import { getErrorMessage } from '../utils/error';
 import { 
   Search, 
@@ -15,9 +15,7 @@ import {
   Layers, 
   Building, 
   Star, 
-  AlertCircle, 
-  FileText,
-  ShieldCheck
+  AlertCircle
 } from 'lucide-react';
 
 interface CitizenTrackPageProps {
@@ -194,10 +192,10 @@ export const CitizenTrackPage: React.FC<CitizenTrackPageProps> = ({ initialCompl
               <div className="border border-slate-200 rounded-xl p-4 bg-white shadow-sm space-y-1">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
                   <Layers className="h-3.5 w-3.5 text-indigo-600" />
-                  Cluster Intelligence
+                  Token Intelligence
                 </span>
                 <p className="text-xs font-mono text-slate-800 truncate">
-                  {complaint.cluster_id ? complaint.cluster_id : 'Single Event'}
+                  {complaint.cluster_id ? complaint.cluster_id : 'Single Incident Token'}
                 </p>
                 <p className="text-xs text-slate-500">
                   {cluster ? `${cluster.member_complaint_ids.length} linked grievances` : 'Direct Routing'}

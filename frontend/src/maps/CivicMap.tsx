@@ -167,7 +167,7 @@ export const CivicMap: React.FC<CivicMapProps> = ({
               onChange={(e) => setShowClustersLayer(e.target.checked)}
               className="rounded text-indigo-600 focus:ring-0"
             />
-            <span>Clusters ({clusterCentroids.length})</span>
+            <span>Tokens ({clusterCentroids.length})</span>
           </label>
 
           {departments.length > 0 && (
@@ -210,6 +210,7 @@ export const CivicMap: React.FC<CivicMapProps> = ({
 
         {onLocationSelect && <LocationPickerEvents onLocationSelect={onLocationSelect} />}
 
+        {/* Selected Location Marker (for citizen intake form) */}
         {selectedLocation && (
           <Marker
             position={[selectedLocation.lat, selectedLocation.lng]}
@@ -233,9 +234,10 @@ export const CivicMap: React.FC<CivicMapProps> = ({
           </Marker>
         )}
 
+        {/* Token Centroid Markers */}
         {showClustersLayer &&
           clusterCentroids.map(({ cluster, centroid, memberCount }) => {
-            const isHigh = cluster.priority_score >= 0.7;
+            const isHigh = cluster.priority_score >= 0.6;
             const sla = calculateSlaStatus(cluster.sla_deadline);
             return (
               <CircleMarker
@@ -252,7 +254,7 @@ export const CivicMap: React.FC<CivicMapProps> = ({
                 <Popup>
                   <div className="p-1 space-y-2 min-w-[200px] text-xs">
                     <div className="flex items-center justify-between border-b pb-1">
-                      <span className="font-bold text-indigo-700">Cluster {cluster.cluster_id.substring(0, 8)}...</span>
+                      <span className="font-bold text-indigo-700">Token {cluster.cluster_id.substring(0, 8)}...</span>
                       <span className="bg-indigo-100 text-indigo-800 text-[10px] font-semibold px-2 py-0.5 rounded-full">
                         {memberCount} Grievance{memberCount > 1 ? 's' : ''}
                       </span>
@@ -264,7 +266,7 @@ export const CivicMap: React.FC<CivicMapProps> = ({
                         <span className="font-semibold text-slate-800">{cluster.department}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Priority:</span>
+                        <span>Priority Tier:</span>
                         <PriorityBadge score={cluster.priority_score} size="sm" />
                       </div>
                       <div className="flex justify-between">
@@ -284,7 +286,7 @@ export const CivicMap: React.FC<CivicMapProps> = ({
                         onClick={() => onSelectCluster(cluster)}
                         className="w-full mt-2 bg-indigo-600 text-white rounded py-1 font-semibold text-[11px] hover:bg-indigo-700 transition"
                       >
-                        Inspect Cluster in Portal
+                        Inspect Token in Portal
                       </button>
                     )}
                   </div>
@@ -293,12 +295,13 @@ export const CivicMap: React.FC<CivicMapProps> = ({
             );
           })}
 
+        {/* Complaint Markers */}
         {showComplaintsLayer &&
           filteredComplaints.map((complaint) => {
             if (typeof complaint.lat !== 'number' || typeof complaint.lng !== 'number') return null;
             const cluster = clusters.find((cl) => cl.cluster_id === complaint.cluster_id);
             const priority = cluster ? cluster.priority_score : 0.3;
-            const isHigh = priority >= 0.7;
+            const isHigh = priority >= 0.6;
 
             return (
               <Marker
@@ -325,7 +328,7 @@ export const CivicMap: React.FC<CivicMapProps> = ({
                         <span className="font-medium text-slate-800">{complaint.department}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-400">Cluster:</span>
+                        <span className="text-slate-400">Token:</span>
                         <span className="font-mono text-slate-800">
                           {complaint.cluster_id ? `${complaint.cluster_id.substring(0, 8)}...` : 'Unassigned'}
                         </span>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { clusterService } from '../services/clusterService';
 import { Cluster, ClusterPatch } from '../types';
 import { getErrorMessage } from '../utils/error';
+import { getPriorityTier } from '../components/PriorityBadge';
 import { X, Save, Loader2, AlertCircle } from 'lucide-react';
 
 interface ClusterEditModalProps {
@@ -28,6 +29,8 @@ export const ClusterEditModal: React.FC<ClusterEditModalProps> = ({
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const currentTier = getPriorityTier(priorityScore).label;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +61,7 @@ export const ClusterEditModal: React.FC<ClusterEditModalProps> = ({
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 animate-in fade-in zoom-in duration-200">
         <div className="flex justify-between items-center pb-3 border-b border-slate-200">
           <div>
-            <h3 className="font-bold text-slate-900 text-lg">Triage Cluster {cluster.cluster_id.substring(0, 8)}...</h3>
+            <h3 className="font-bold text-slate-900 text-lg">Triage Token {cluster.cluster_id.substring(0, 8)}...</h3>
             <p className="text-xs text-slate-500">Update status, routing, and SLA overrides via PATCH endpoint.</p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1">
@@ -108,9 +111,9 @@ export const ClusterEditModal: React.FC<ClusterEditModalProps> = ({
           <div>
             <div className="flex justify-between items-center mb-1">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                Priority Score (0.00 to 1.00)
+                Priority Tier Override
               </label>
-              <span className="font-mono text-xs font-bold text-sky-700">{priorityScore.toFixed(2)}</span>
+              <span className="font-semibold text-xs text-sky-700">{currentTier} Tier</span>
             </div>
             <input
               type="range"
@@ -121,6 +124,12 @@ export const ClusterEditModal: React.FC<ClusterEditModalProps> = ({
               onChange={(e) => setPriorityScore(parseFloat(e.target.value))}
               className="w-full accent-sky-600"
             />
+            <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-medium">
+              <span>Low</span>
+              <span>Medium</span>
+              <span>High</span>
+              <span>Critical</span>
+            </div>
           </div>
 
           <div>
