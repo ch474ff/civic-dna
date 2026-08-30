@@ -1,3 +1,5 @@
+export type SupportedLanguage = 'en' | 'hi' | 'hinglish' | 'ta' | 'bn' | 'mr' | 'kn' | string;
+
 export interface ComplaintCreate {
   title: string;
   description: string;
@@ -5,7 +7,7 @@ export interface ComplaintCreate {
   lng: number;
   images?: string[];
   audio?: string | null;
-  language?: string;
+  language?: SupportedLanguage;
 }
 
 export interface ComplaintResponse {
@@ -29,6 +31,24 @@ export type Complaint = ComplaintResponse;
 
 export type ClusterStatus = 'submitted' | 'acknowledged' | 'in_progress' | 'resolved' | 'closed' | string;
 
+export interface ComplaintStatusResponse {
+  complaint_id: string;
+  cluster_id: string | null;
+  status: ClusterStatus;
+  department: string;
+  category: string;
+  priority_score: number;
+  sla_deadline: string | null;
+  root_cause_asset: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface ComplaintTimelineItem {
+  status: string;
+  timestamp: string;
+}
+
 export interface ClusterResponse {
   cluster_id: string;
   member_complaint_ids: string[];
@@ -37,9 +57,21 @@ export interface ClusterResponse {
   sla_deadline: string;
   status: ClusterStatus;
   root_cause_asset: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export type Cluster = ClusterResponse;
+
+export interface PublicMapCluster {
+  cluster_id: string;
+  category: string;
+  department: string;
+  status: ClusterStatus;
+  priority_score: number;
+  centroid: { lat: number; lng: number };
+  complaint_count: number;
+}
 
 export interface EscalationItem {
   cluster_id: string;

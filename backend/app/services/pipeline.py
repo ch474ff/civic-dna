@@ -8,7 +8,7 @@ from uuid import uuid4
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
-from app.models import Cluster, Complaint, Department
+from app.models import Cluster, ClusterStatusHistory, Complaint, Department
 from app.schemas import ComplaintCreate
 from app.services.classification import ClassificationResult, ClassificationService
 from app.services.deduplication import DeduplicationService
@@ -107,7 +107,11 @@ def process_complaint(
 
     _ensure_department(db, classified.department)
 
+    is_new_cluster = False
+    now_utc = datetime.now(UTC)
+
     if cluster is None:
+        is_new_cluster = True
         cluster = Cluster(
             cluster_id=str(uuid4()),
             member_complaint_ids=[complaint_id],
@@ -116,9 +120,21 @@ def process_complaint(
             sla_deadline=sla_deadline,
             status="submitted",
             root_cause_asset=None,
+            created_at=now_utc,
+            updated_at=now_utc,
         )
         db.add(cluster)
         db.flush()
+
+        # Record initial status in status history
+        initial_history = ClusterStatusHistory(
+            cluster_id=cluster.cluster_id,
+            old_status=None,
+            new_status="submitted",
+            changed_at=now_utc,
+            changed_by_officer_id=None,
+        )
+        db.add(initial_history)
     else:
         members = list(cluster.member_complaint_ids or [])
         if complaint_id not in members:
@@ -131,6 +147,7 @@ def process_complaint(
             existing_deadline = existing_deadline.replace(tzinfo=UTC)
         if existing_deadline is None or sla_deadline < existing_deadline:
             cluster.sla_deadline = sla_deadline
+        cluster.updated_at = now_utc
 
     complaint = Complaint(
         complaint_id=complaint_id,
@@ -146,7 +163,7 @@ def process_complaint(
         confidence=classified.confidence,
         extracted_severity_keywords=list(classified.extracted_severity_keywords or []),
         cluster_id=cluster.cluster_id,
-        created_at=datetime.fromisoformat(draft["created_at"]) if isinstance(draft.get("created_at"), str) else (draft.get("created_at") or datetime.now(UTC)),
+        created_at=datetime.fromisoformat(draft["created_at"]) if isinstance(draft.get("created_at"), str) else (draft.get("created_at") or now_utc),
     )
     db.add(complaint)
     db.commit()
@@ -175,13 +192,23 @@ def process_complaint(
                 category=complaint.category,
                 location=(complaint.lat, complaint.lng),
             )
-            if duplicate_cluster_id and duplicate_cluster_id != cluster.cluster_id:
-                graph_service.link_related_clusters(
-                    cluster.cluster_id,
-                    duplicate_cluster_id,
-                    weight=0.9,
-                    reason="Deduplication cluster match",
+
+            # Discover related clusters (same department or nearby existing cluster that is not itself)
+            if is_new_cluster:
+                other_clusters = (
+                    db.query(Cluster)
+                    .filter(Cluster.cluster_id != cluster.cluster_id, Cluster.department == cluster.department)
+                    .limit(5)
+                    .all()
                 )
+                for other in other_clusters:
+                    if other.cluster_id != cluster.cluster_id:
+                        graph_service.link_related_clusters(
+                            cluster.cluster_id,
+                            other.cluster_id,
+                            weight=0.7,
+                            reason="Same department incident",
+                        )
         except Exception:
             logger.exception("Graph service update failed; continuing without failing complaint")
 

@@ -2,15 +2,19 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.auth.jwt import get_current_officer
 from app.database import get_db
-from app.models import Cluster, Complaint
+from app.models import Cluster, Complaint, Officer
 from app.schemas import AnalyticsSummary
 
 router = APIRouter()
 
 
 @router.get("/summary", response_model=AnalyticsSummary)
-def analytics_summary(db: Session = Depends(get_db)) -> AnalyticsSummary:
+def analytics_summary(
+    db: Session = Depends(get_db),
+    _: Officer = Depends(get_current_officer),
+) -> AnalyticsSummary:
     complaints_total = db.query(func.count(Complaint.complaint_id)).scalar() or 0
     clusters_total = db.query(func.count(Cluster.cluster_id)).scalar() or 0
 

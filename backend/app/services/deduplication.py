@@ -188,6 +188,43 @@ STOPWORDS: frozenset[str] = frozenset(
     }
 )
 
+KANNADA_STOPWORDS: frozenset[str] = frozenset(
+    {
+        "ಮತ್ತು",
+        "ಇದೆ",
+        "ಇಲ್ಲ",
+        "ಆಗಿದೆ",
+        "ಆಗುತ್ತಿದೆ",
+        "ಇಲ್ಲಿ",
+        "ಅಲ್ಲಿ",
+        "ನಮ್ಮ",
+        "ಈ",
+        "ಆ",
+        "ಬಗ್ಗೆ",
+        "ಮೇಲೆ",
+        "ಕೆಳಗೆ",
+        "ಒಳಗೆ",
+        "ಹೊರಗೆ",
+        "ಮಾಡಬೇಕು",
+        "ಮಾಡಲಾಗಿದೆ",
+        "ಬಹಳ",
+        "ತುಂಬಾ",
+        "ಸಾಕಷ್ಟು",
+        "ಕಡೆಗೆ",
+        "ಕಡೆಗೂ",
+        "ಮಾಡಿ",
+        "ಆಗಿ",
+        "ಇರುವ",
+        "ಇರುವಾಗ",
+        "ಎಂದು",
+        "ಯಾವುದೇ",
+    }
+)
+
+STOPWORDS: frozenset[str] = (
+    STOPWORDS | KANNADA_STOPWORDS
+)
+
 CIVIC_SYNONYMS: dict[str, str] = {
     # Magnitude / Severity
     "huge": "_mag_high_",
@@ -541,6 +578,86 @@ CIVIC_SYNONYMS: dict[str, str] = {
     "samne": "_near_",
     "saamne": "_near_",
     "bagal": "_near_",
+    "shortage": "_shortage_",
+    "scarcity": "_shortage_",
+    "normal_supply": "_normal_state_",
+    "normal": "_normal_state_",
+    # Kannada Concept Mappings
+    "ನೀರು": "_water_",
+    "ನೀರಿನ": "_water_",
+    "ಜಲ": "_water_",
+    "ಕುಡಿಯುವ": "_water_",
+    "neeru": "_water_",
+    "neerina": "_water_",
+    "ಪೈಪ್": "_pipe_",
+    "ಪೈಪ್ಲೈನ್": "_pipe_",
+    "ಪೈಪ್ಗಳು": "_pipe_",
+    "ಕೊಳವೆ": "_pipe_",
+    "ಸೋರಿಕೆ": "_leak_",
+    "ಸೋರಿಕೆಯಾಗುತ್ತಿದೆ": "_leak_",
+    "ಸೋರುತ್ತಿದೆ": "_leak_",
+    "ಸೋರಿಕೆಗಳು": "_leak_",
+    "ಹರಿಯುತ್ತಿದೆ": "_leak_",
+    "ರಸ್ತೆ": "_road_",
+    "ರಸ್ತೆಯ": "_road_",
+    "ದಾರಿ": "_road_",
+    "ರಸ್ತೆಗಳು": "_road_",
+    "raste": "_road_",
+    "ಗುಂಡಿ": "_pothole_",
+    "ಗುಂಡಿಗಳು": "_pothole_",
+    "ಗುಂಡಿಬಿದ್ದ": "_pothole_",
+    "gundi": "_pothole_",
+    "gundigalu": "_pothole_",
+    "ಹಾಳಾದ": "_damage_",
+    "ಒಡೆದ": "_damage_",
+    "ಹಾಳಾಗಿದೆ": "_damage_",
+    "ದುರಸ್ತಿ": "_repair_",
+    "ವಿದ್ಯುತ್": "_electric_",
+    "ಕರೆಂಟ್": "_electric_",
+    "ತಂತಿ": "_electric_",
+    "ಕಂಬ": "_pole_",
+    "ದೀಪ": "_light_",
+    "ದೀಪಗಳು": "_light_",
+    "ಲೈಟ್": "_light_",
+    "ಬೀದಿದೀಪ": "_light_",
+    "ಬೀದಿ": "_road_",
+    "ಕಸ": "_garbage_",
+    "ತ್ಯಾಜ್ಯ": "_garbage_",
+    "ಕೊಳಕು": "_garbage_",
+    "ಕಸದ": "_garbage_",
+    "kasa": "_garbage_",
+    "ಕಸಬುಟ್ಟಿ": "_bin_",
+    "ಬುಟ್ಟಿ": "_bin_",
+    "ಚರಂಡಿ": "_drain_",
+    "ಚರಂಡಿಯ": "_drain_",
+    "ಗಟಾರ್": "_drain_",
+    "charandi": "_drain_",
+    "ಒಳಚರಂಡಿ": "_sewer_",
+    "ಅಪಾಯ": "_hazard_",
+    "ಅಪಾಯಕಾರಿ": "_hazard_",
+    "apaya": "_hazard_",
+    "ಅಪಘಾತ": "_hazard_",
+    "ಸಾವು": "_hazard_",
+    "ಬೆಂಕಿ": "_hazard_",
+    "ಮಾರುಕಟ್ಟೆ": "_market_",
+    "ಅಂಗಡಿ": "_market_",
+    "ಅಂಗಡಿಗಳ": "_market_",
+    "ಹತ್ತಿರ": "_near_",
+    "ಬಳಿ": "_near_",
+    "hattira": "_near_",
+    "ಶಾಲೆ": "_edu_",
+    "ಆಸ್ಪತ್ರೆ": "_health_",
+    "ದೇವಾಲಯ": "_worship_",
+    "ದೊಡ್ಡ": "_mag_high_",
+    "ತೀವ್ರ": "_mag_high_",
+    "ಗಂಭೀರ": "_mag_high_",
+    "ಬಹಳ": "_mag_high_",
+    "ತುಂಬಾ": "_mag_high_",
+    "ಸಣ್ಣ": "_mag_low_",
+    "ಸ್ವಲ್ಪ": "_mag_low_",
+    "ಸಮಸ್ಯೆ": "_issue_",
+    "ತೊಂದರೆ": "_issue_",
+    "samasye": "_issue_",
 }
 
 
@@ -586,16 +703,33 @@ class TextSimilarityEngine:
         if not text:
             return []
         cleaned = text.lower()
+        # Negation rules (English, Hindi, Kannada)
+        cleaned = re.sub(r"\bno\s+water\s+shortage\b", "normal_supply", cleaned)
+        cleaned = re.sub(r"\bno\s+shortage\b", "normal_supply", cleaned)
+        cleaned = re.sub(r"\bno\s+problem\b", "normal_supply", cleaned)
+        cleaned = re.sub(r"\bno\s+issue\b", "normal_supply", cleaned)
+        cleaned = re.sub(r"ನೀರಿನ\s+ಸಮಸ್ಯೆ\s+ಇಲ್ಲ", "normal_supply", cleaned)
+        cleaned = re.sub(r"ನೀರು\s+ಸೋರಿಕೆ\s+ಇಲ್ಲ", "normal_supply", cleaned)
+        cleaned = re.sub(r"ಯಾವುದೇ\s+ಸಮಸ್ಯೆ\s+ಇಲ್ಲ", "normal_supply", cleaned)
+        cleaned = re.sub(r"ಸಮಸ್ಯೆ\s+ಇಲ್ಲ", "normal_supply", cleaned)
+        cleaned = re.sub(r"ಸೋರಿಕೆ\s+ಇಲ್ಲ", "normal_supply", cleaned)
         cleaned = re.sub(r"\bno\s+water\b", "no_water", cleaned)
         cleaned = re.sub(r"\bpaani\s+nahi\b", "no_water", cleaned)
         cleaned = re.sub(r"\bpani\s+nahi\b", "no_water", cleaned)
+        cleaned = re.sub(r"ನೀರು\s+ಇಲ್ಲ", "no_water", cleaned)
+        cleaned = re.sub(r"ನೀರು\s+ಬರ್ತಿಲ್ಲ", "no_water", cleaned)
+        cleaned = re.sub(r"ನೀರು\s+ಬರೋದಿಲ್ಲ", "no_water", cleaned)
         cleaned = re.sub(r"\bbijli\s+gul\b", "outage", cleaned)
         cleaned = re.sub(r"\bbijli\s+nahi\b", "outage", cleaned)
         cleaned = re.sub(r"\bpower\s+cut\b", "outage", cleaned)
+        cleaned = re.sub(r"ವಿದ್ಯುತ್\s+ಇಲ್ಲ", "outage", cleaned)
+        cleaned = re.sub(r"ಕರೆಂಟ್\s+ಇಲ್ಲ", "outage", cleaned)
         cleaned = re.sub(r"\bnot\s+working\b", "broken", cleaned)
         cleaned = re.sub(r"\bkaam\s+nahi\s+kar\s+raha\b", "broken", cleaned)
         cleaned = re.sub(r"\bout\s+of\s+order\b", "broken", cleaned)
-        cleaned = re.sub(r"[^\w\s]", " ", cleaned)
+        cleaned = re.sub(r"ಕೆಲಸ\s+ಮಾಡುತ್ತಿಲ್ಲ", "broken", cleaned)
+        cleaned = re.sub(r"ಕೆಟ್ಟಿದೆ", "broken", cleaned)
+        cleaned = re.sub(r"[^\w\s\u0900-\u0d7f]", " ", cleaned)
 
         tokens: list[str] = []
         for raw in cleaned.split():
@@ -652,12 +786,19 @@ class TextSimilarityEngine:
         if not tokens1 and not tokens2:
             return 1.0 if t1 == t2 else 0.0
 
+        # Contradiction penalty: negation / normal supply vs active issue
+        has_normal_1 = "_normal_state_" in tokens1
+        has_normal_2 = "_normal_state_" in tokens2
+        if has_normal_1 != has_normal_2:
+            return 0.0
+
         tok_sim = cls.token_dice(tokens1, tokens2)
         ngram_sim = cls.ngram_dice(t1, t2, n=3)
         seq_sim = SequenceMatcher(None, t1, t2).ratio()
 
-        # Weighted combination favoring semantic concept token overlap
-        return 0.60 * tok_sim + 0.25 * ngram_sim + 0.15 * seq_sim
+        # Weighted combination favoring semantic concept token overlap across scripts
+        blended = 0.60 * tok_sim + 0.25 * ngram_sim + 0.15 * seq_sim
+        return max(tok_sim, blended) if tok_sim >= 0.5 else blended
 
     @classmethod
     def compute_text_similarity(
@@ -677,6 +818,14 @@ class TextSimilarityEngine:
         # Full text combined
         full1 = f"{title1} {desc1}".strip()
         full2 = f"{title2} {desc2}".strip()
+
+        tokens_full1 = cls.tokenize(full1)
+        tokens_full2 = cls.tokenize(full2)
+        has_norm_1 = "_normal_state_" in tokens_full1
+        has_norm_2 = "_normal_state_" in tokens_full2
+        if has_norm_1 != has_norm_2:
+            return 0.0
+
         full_sim = cls.string_similarity(full1, full2)
 
         # Cross-comparison (title against description)
@@ -884,13 +1033,26 @@ class MultiSignalDeduplicationService(DeduplicationService):
         dept_score = self.compute_department_similarity(complaint, candidate)
         temporal_score, delta_seconds = self.compute_temporal_similarity(complaint, candidate)
 
-        # Hard Gating: If both complaints have coordinates and distance exceeds configured radius,
-        # they represent distinct geographic locations and must not be grouped.
+        # Hard Gating:
+        # 1. If distance exceeds radius, do not group
         if distance_meters is not None and distance_meters > self.geo_radius_meters:
             return SimilarityBreakdown(
                 total_score=0.0,
                 text_score=text_score,
                 geo_score=0.0,
+                category_score=cat_score,
+                dept_score=dept_score,
+                temporal_score=temporal_score,
+                distance_meters=distance_meters,
+                time_delta_seconds=delta_seconds,
+            )
+
+        # 2. If text similarity is 0.0 (e.g. semantic contradiction or completely unrelated words), do not group
+        if text_score <= 0.0:
+            return SimilarityBreakdown(
+                total_score=0.0,
+                text_score=0.0,
+                geo_score=geo_score,
                 category_score=cat_score,
                 dept_score=dept_score,
                 temporal_score=temporal_score,

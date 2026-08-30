@@ -21,13 +21,14 @@ def get_sla_deadline(
     priority_score: float,
     department: str = "default",
     now: datetime | None = None,
+    base_time: datetime | None = None,
 ) -> datetime:
     """Return an SLA deadline considering department-specific rules.
 
     Falls back to the ``default`` tier config if the department has no
     specific entry in ``SLA_HOURS``.
     """
-    moment = now or datetime.now(UTC)
+    moment = base_time or now or datetime.now(UTC)
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=UTC)
 

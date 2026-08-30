@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { complaintService } from '../services/complaintService';
 import { Star, X, CheckCircle, Loader2 } from 'lucide-react';
-import { getErrorMessage } from '../utils/error';
+import { getApiErrorMessage } from '../utils/errorHandler';
 
 interface FeedbackModalProps {
   complaintId: string;
@@ -40,7 +40,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
         onClose();
       }, 1500);
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getApiErrorMessage(err, "We couldn't submit your feedback."));
     } finally {
       setSubmitting(false);
     }

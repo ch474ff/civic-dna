@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { clusterService } from '../services/clusterService';
 import { Cluster, ClusterPatch } from '../types';
-import { getErrorMessage } from '../utils/error';
+import { getApiErrorMessage } from '../utils/errorHandler';
 import { getPriorityTier } from '../components/PriorityBadge';
 import { X, Save, Loader2, AlertCircle } from 'lucide-react';
 
@@ -50,7 +50,7 @@ export const ClusterEditModal: React.FC<ClusterEditModalProps> = ({
       onSuccess(updated);
       onClose();
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getApiErrorMessage(err, "We couldn't update the incident token."));
     } finally {
       setLoading(false);
     }

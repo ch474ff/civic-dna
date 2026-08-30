@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { complaintService } from '../services/complaintService';
-import { clusterService } from '../services/clusterService';
-import { Complaint, Cluster } from '../types';
+import { Complaint, ComplaintStatusResponse, ComplaintTimelineItem } from '../types';
 import { CivicMap } from '../maps/CivicMap';
 import { FeedbackModal } from '../components/FeedbackModal';
 import { formatDate } from '../utils/formatters';
-import { getErrorMessage } from '../utils/error';
+import { getApiErrorMessage } from '../utils/errorHandler';
 import { 
   Search, 
   Clock, 
@@ -15,7 +14,6 @@ import {
   Star, 
   AlertCircle,
   Check,
-  FileText
 } from 'lucide-react';
 
 interface CitizenTrackPageProps {
@@ -32,7 +30,8 @@ const getPriorityLabel = (score: number) => {
 export const CitizenTrackPage: React.FC<CitizenTrackPageProps> = ({ initialComplaintId = '' }) => {
   const [complaintId, setComplaintId] = useState(initialComplaintId);
   const [complaint, setComplaint] = useState<Complaint | null>(null);
-  const [cluster, setCluster] = useState<Cluster | null>(null);
+  const [statusInfo, setStatusInfo] = useState<ComplaintStatusResponse | null>(null);
+  const [timeline, setTimeline] = useState<ComplaintTimelineItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
@@ -55,71 +54,77 @@ export const CitizenTrackPage: React.FC<CitizenTrackPageProps> = ({ initialCompl
     setLoading(true);
     setError(null);
     setComplaint(null);
-    setCluster(null);
+    setStatusInfo(null);
+    setTimeline([]);
 
     try {
+      // 1. Fetch complaint details
       const comp = await complaintService.getComplaint(id);
       setComplaint(comp);
 
-      if (comp.cluster_id) {
-        try {
-          const cl = await clusterService.getCluster(comp.cluster_id);
-          setCluster(cl);
-        } catch {
-          // Cluster fetch optional
-        }
+      // 2. Fetch public citizen status (no officer JWT required)
+      try {
+        const statusData = await complaintService.getComplaintStatus(id);
+        setStatusInfo(statusData);
+      } catch (err) {
+        if (import.meta.env.DEV) console.warn('Could not fetch status data:', err);
+      }
+
+      // 3. Fetch status history timeline
+      try {
+        const historyData = await complaintService.getComplaintTimeline(id);
+        setTimeline(historyData);
+      } catch (err) {
+        if (import.meta.env.DEV) console.warn('Could not fetch timeline data:', err);
       }
     } catch (err) {
-      const errMsg = getErrorMessage(err);
-      if (errMsg.includes('404') || errMsg.toLowerCase().includes('not found')) {
-        setError("We couldn't find a grievance with that ID.");
-      } else {
-        setError("We couldn't retrieve your grievance right now. Please try again.");
-      }
+      setError(getApiErrorMessage(err, "We couldn't retrieve your grievance right now. Please try again."));
     } finally {
       setLoading(false);
     }
   };
 
-  const getTimelineStages = (comp: Complaint, clust: Cluster | null) => {
-    const currentStatus = clust?.status || 'submitted';
-    
+  const currentStatus = (statusInfo?.status || 'submitted').toLowerCase();
+
+  const getTimelineStages = (comp: Complaint, stInfo: ComplaintStatusResponse | null) => {
+    const st = (stInfo?.status || 'submitted').toLowerCase();
+
     return [
-      { 
-        label: 'Submitted', 
-        desc: 'Grievance received and registered.', 
-        done: true, 
-        current: currentStatus === 'submitted' && !comp.department 
+      {
+        label: 'Submitted',
+        desc: 'Grievance received and registered.',
+        done: true,
+        current: st === 'submitted' && !comp.department,
       },
-      { 
-        label: 'Reviewed', 
-        desc: 'Automatically reviewed for department routing.', 
-        done: !!comp.department || !!comp.cluster_id, 
-        current: false 
+      {
+        label: 'Reviewed',
+        desc: 'Automatically reviewed for department routing.',
+        done: !!comp.department || !!stInfo?.cluster_id,
+        current: false,
       },
-      { 
-        label: 'Automatically Routed', 
-        desc: comp.department ? `Routed to ${comp.department}` : 'Routing to department...', 
-        done: !!comp.department, 
-        current: currentStatus === 'submitted' && !!comp.department 
+      {
+        label: 'Automatically Routed',
+        desc: comp.department ? `Routed to ${comp.department}` : 'Routing to department...',
+        done: !!comp.department,
+        current: st === 'submitted' && !!comp.department,
       },
-      { 
-        label: 'Department Reviewing', 
-        desc: 'Assessing priority and scheduling action.', 
-        done: ['acknowledged', 'in_progress', 'resolved', 'closed'].includes(currentStatus), 
-        current: currentStatus === 'acknowledged' 
+      {
+        label: 'Department Reviewing',
+        desc: 'Assessing priority and scheduling action.',
+        done: ['acknowledged', 'in_progress', 'resolved', 'closed'].includes(st),
+        current: st === 'acknowledged',
       },
-      { 
-        label: 'Resolution', 
-        desc: 'Department executing required resolution actions.', 
-        done: ['resolved', 'closed'].includes(currentStatus), 
-        current: currentStatus === 'in_progress' 
+      {
+        label: 'In Progress / Resolution',
+        desc: 'Department executing required resolution actions.',
+        done: ['resolved', 'closed'].includes(st),
+        current: st === 'in_progress',
       },
-      { 
-        label: 'Closed', 
-        desc: 'Grievance resolved and case closed.', 
-        done: currentStatus === 'closed', 
-        current: currentStatus === 'closed' 
+      {
+        label: 'Closed',
+        desc: 'Grievance resolved and case closed.',
+        done: st === 'closed',
+        current: st === 'closed',
       },
     ];
   };
@@ -215,9 +220,14 @@ export const CitizenTrackPage: React.FC<CitizenTrackPageProps> = ({ initialCompl
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
               <div className="border-b border-slate-200 p-5 bg-slate-50/50">
-                <span className="font-mono text-xs text-slate-500 block mb-1">
-                  Grievance ID: {complaint.complaint_id}
-                </span>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="font-mono text-xs text-slate-500 block">
+                    Grievance ID: {complaint.complaint_id}
+                  </span>
+                  <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                    Status: {statusInfo?.status || 'Submitted'}
+                  </span>
+                </div>
                 <h3 className="text-lg font-bold text-slate-900 leading-tight">
                   {complaint.title}
                 </h3>
@@ -241,7 +251,7 @@ export const CitizenTrackPage: React.FC<CitizenTrackPageProps> = ({ initialCompl
                       <Building className="h-3.5 w-3.5 text-slate-500" />
                       Routed Department
                     </span>
-                    <p className="text-sm font-semibold text-slate-800">{complaint.department || 'Under evaluation'}</p>
+                    <p className="text-sm font-semibold text-slate-800">{complaint.department || statusInfo?.department || 'Under evaluation'}</p>
                   </div>
 
                   <div className="border border-slate-200 rounded-md p-4 bg-white shadow-sm space-y-1">
@@ -253,26 +263,26 @@ export const CitizenTrackPage: React.FC<CitizenTrackPageProps> = ({ initialCompl
                   </div>
                 </div>
 
-                {/* Intelligence Metrics (understated, no confidence levels) */}
-                {cluster && (
+                {/* Status and SLA Information */}
+                {statusInfo && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 pt-4">
                     <div className="space-y-0.5">
                       <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
                         Priority Level
                       </span>
                       <p className="text-sm font-semibold text-slate-800">
-                        {getPriorityLabel(cluster.priority_score)}
+                        {getPriorityLabel(statusInfo.priority_score)}
                       </p>
                     </div>
 
-                    {cluster.member_complaint_ids.length > 1 && (
+                    {statusInfo.sla_deadline && (
                       <div className="space-y-0.5">
                         <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                          <Layers className="h-3.5 w-3.5 text-slate-400" />
-                          Similar reports nearby
+                          <Clock className="h-3.5 w-3.5 text-slate-400" />
+                          Target Resolution SLA
                         </span>
                         <p className="text-sm font-semibold text-slate-800">
-                          {cluster.member_complaint_ids.length - 1} other active report(s)
+                          {formatDate(statusInfo.sla_deadline)}
                         </p>
                       </div>
                     )}
@@ -289,7 +299,7 @@ export const CitizenTrackPage: React.FC<CitizenTrackPageProps> = ({ initialCompl
                     <CivicMap
                       height="240px"
                       complaints={[complaint]}
-                      clusters={cluster ? [cluster] : []}
+                      clusters={[]}
                       showFilters={false}
                     />
                   </div>
@@ -299,7 +309,7 @@ export const CitizenTrackPage: React.FC<CitizenTrackPageProps> = ({ initialCompl
                 </div>
 
                 {/* Feedback rating */}
-                {cluster?.status === 'resolved' && (
+                {currentStatus === 'resolved' && (
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200 bg-slate-50 p-4 rounded-md">
                     <div>
                       <h5 className="font-semibold text-slate-800 text-sm">Grievance Resolved</h5>
@@ -326,7 +336,7 @@ export const CitizenTrackPage: React.FC<CitizenTrackPageProps> = ({ initialCompl
               </h3>
               
               <div className="space-y-6 pl-1.5">
-                {getTimelineStages(complaint, cluster).map((stage, idx, arr) => {
+                {getTimelineStages(complaint, statusInfo).map((stage, idx, arr) => {
                   const isDone = stage.done;
                   const isCurrent = stage.current;
                   const isLast = idx === arr.length - 1;
@@ -366,6 +376,23 @@ export const CitizenTrackPage: React.FC<CitizenTrackPageProps> = ({ initialCompl
                   );
                 })}
               </div>
+
+              {/* Verified Status Transitions if available */}
+              {timeline.length > 0 && (
+                <div className="border-t border-slate-100 pt-4 space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                    Activity History
+                  </h4>
+                  <ul className="space-y-1.5">
+                    {timeline.map((item, i) => (
+                      <li key={i} className="text-xs flex items-center justify-between text-slate-600">
+                        <span className="capitalize font-medium">{item.status.replace('_', ' ')}</span>
+                        <span className="text-slate-400 text-[11px]">{formatDate(item.timestamp)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
 

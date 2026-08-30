@@ -6,7 +6,7 @@ import { PriorityBadge } from '../components/PriorityBadge';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ClusterEditModal } from '../dashboard/ClusterEditModal';
 import { calculateSlaStatus } from '../utils/sla';
-import { getErrorMessage } from '../utils/error';
+import { getApiErrorMessage } from '../utils/errorHandler';
 import { 
   Shield, 
   Search, 
@@ -43,7 +43,7 @@ export const OfficerDashboardPage: React.FC = () => {
       const data = await clusterService.listClusters(sortOrder);
       setClusters(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getApiErrorMessage(err, "We couldn't load incident clusters."));
     } finally {
       setLoading(false);
     }

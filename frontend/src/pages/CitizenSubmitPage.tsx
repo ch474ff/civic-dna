@@ -3,7 +3,7 @@ import { complaintService } from '../services/complaintService';
 import { ComplaintCreate, Complaint } from '../types';
 import { CivicMap } from '../maps/CivicMap';
 import { StepIndicator } from '../components/StepIndicator';
-import { getErrorMessage } from '../utils/error';
+import { getApiErrorMessage } from '../utils/errorHandler';
 import { formatPercent } from '../utils/formatters';
 import {
   Send,
@@ -31,9 +31,11 @@ import {
 const LANGUAGES = [
   { code: 'en', label: 'English' },
   { code: 'hi', label: 'हिन्दी — Hindi' },
+  { code: 'hinglish', label: 'Hinglish (Hindi in Latin script)' },
   { code: 'ta', label: 'தமிழ் — Tamil' },
   { code: 'bn', label: 'বাংলা — Bengali' },
   { code: 'mr', label: 'मराठी — Marathi' },
+  { code: 'kn', label: 'Kannada (ಕನ್ನಡ)' },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -163,7 +165,7 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
 
       setReceipt(result);
     } catch (err) {
-      setError("We couldn't submit your grievance. Please check your network connection and try again.");
+      setError(getApiErrorMessage(err, "We couldn't submit your grievance. Please check your network connection and try again."));
     } finally {
       setSubmitting(false);
     }
@@ -253,6 +255,13 @@ export const CitizenSubmitPage: React.FC<CitizenSubmitPageProps> = ({ onNavigate
                 <div className="flex justify-between items-center py-1 border-t border-slate-100">
                   <span className="text-slate-500 font-medium">Department</span>
                   <span className="text-slate-800 font-semibold">{receipt.department}</span>
+                </div>
+              )}
+
+              {receipt.language && (
+                <div className="flex justify-between items-center py-1 border-t border-slate-100">
+                  <span className="text-slate-500 font-medium">Submission Language</span>
+                  <span className="font-medium text-slate-700 uppercase">{receipt.language}</span>
                 </div>
               )}
             </div>

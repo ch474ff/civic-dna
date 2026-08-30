@@ -3,7 +3,6 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { MyGrievancesPage } from '../pages/MyGrievancesPage';
 import { complaintService } from '../services/complaintService';
-import { clusterService } from '../services/clusterService';
 
 describe('My Grievances List Page', () => {
   beforeEach(() => {
@@ -25,13 +24,12 @@ describe('My Grievances List Page', () => {
     expect(screen.getByText(/You haven't filed any grievances yet/i)).toBeInTheDocument();
     expect(screen.getByText(/Report an issue in your community/i)).toBeInTheDocument();
     
-    // Clicking File a Grievance button navigates to submit
     const fileBtn = screen.getAllByRole('button', { name: /File a Grievance/i })[1];
     fireEvent.click(fileBtn);
     expect(mockNavigateToSubmit).toHaveBeenCalled();
   });
 
-  it('loads and lists grievances from localStorage ids', async () => {
+  it('loads and lists grievances using sanitized public status without officer auth', async () => {
     const mockNavigateToTrack = vi.fn();
     const mockNavigateToSubmit = vi.fn();
 
@@ -71,14 +69,30 @@ describe('My Grievances List Page', () => {
       created_at: new Date(Date.now() - 3600 * 1000).toISOString(),
     };
 
-    const mockCluster = {
+    const mockStatus1 = {
+      complaint_id: 'cmp-501',
       cluster_id: 'clust-pothole',
-      member_complaint_ids: ['cmp-501'],
+      status: 'resolved',
       department: 'Roads Dept',
+      category: 'Potholes',
       priority_score: 0.5,
       sla_deadline: new Date().toISOString(),
-      status: 'resolved',
       root_cause_asset: 'SECTOR-5',
+      created_at: mockComp1.created_at,
+      updated_at: new Date().toISOString(),
+    };
+
+    const mockStatus2 = {
+      complaint_id: 'cmp-502',
+      cluster_id: null,
+      status: 'submitted',
+      department: 'Water Dept',
+      category: 'Water Leakage',
+      priority_score: 0.3,
+      sla_deadline: null,
+      root_cause_asset: null,
+      created_at: mockComp2.created_at,
+      updated_at: mockComp2.created_at,
     };
 
     vi.spyOn(complaintService, 'getComplaint').mockImplementation(async (id) => {
@@ -87,7 +101,11 @@ describe('My Grievances List Page', () => {
       throw new Error('Not found');
     });
       
-    vi.spyOn(clusterService, 'getCluster').mockResolvedValue(mockCluster);
+    vi.spyOn(complaintService, 'getComplaintStatus').mockImplementation(async (id) => {
+      if (id === 'cmp-501') return mockStatus1;
+      if (id === 'cmp-502') return mockStatus2;
+      throw new Error('Not found');
+    });
 
     render(
       <MyGrievancesPage

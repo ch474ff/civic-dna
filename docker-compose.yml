@@ -13,7 +13,7 @@ services:
       timeout: 5s
       retries: 10
     volumes:
-      civic_pgdata:/var/lib/postgresql/data
+      - civic_pgdata:/var/lib/postgresql/data
 
   api:
     build:
@@ -21,13 +21,15 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql+psycopg://civic:civic@db:5432/civic_dna
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://civic:civic@db:5432/civic_dna}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-local-env}
-      JWT_ALGORITHM: HS256
-      JWT_EXPIRE_MINUTES: "60"
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-60}
       OFFICER_BOOTSTRAP_USERNAME: ${OFFICER_BOOTSTRAP_USERNAME:-officer}
       OFFICER_BOOTSTRAP_PASSWORD: ${OFFICER_BOOTSTRAP_PASSWORD:-changeme}
-      CIVIC_CREATE_TABLES: "false"
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173}
+      CIVIC_CREATE_TABLES: ${CIVIC_CREATE_TABLES:-false}
     depends_on:
       db:
         condition: service_healthy

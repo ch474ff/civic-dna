@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import { Complaint, Cluster } from '../types';
+import { Complaint, Cluster, PublicMapCluster } from '../types';
 import { PriorityBadge } from '../components/PriorityBadge';
 import { calculateSlaStatus } from '../utils/sla';
 import { Layers, MapPin } from 'lucide-react';
@@ -81,31 +81,41 @@ const LocationPickerEvents: React.FC<LocationPickerEventsProps> = ({ onLocationS
 interface CivicMapProps {
   complaints?: Complaint[];
   clusters?: Cluster[];
+  publicClusters?: PublicMapCluster[];
   selectedLocation?: { lat: number; lng: number } | null;
   onLocationSelect?: (lat: number, lng: number) => void;
   height?: string;
   showFilters?: boolean;
   onSelectComplaint?: (complaint: Complaint) => void;
   onSelectCluster?: (cluster: Cluster) => void;
+  onSelectPublicCluster?: (cluster: PublicMapCluster) => void;
 }
 
 export const CivicMap: React.FC<CivicMapProps> = ({
   complaints = [],
   clusters = [],
+  publicClusters = [],
   selectedLocation = null,
   onLocationSelect,
   height = '500px',
   showFilters = true,
   onSelectComplaint,
   onSelectCluster,
+  onSelectPublicCluster,
 }) => {
   const [showComplaintsLayer, setShowComplaintsLayer] = useState(true);
   const [showClustersLayer, setShowClustersLayer] = useState(true);
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
 
-  const validCoordinates = complaints
+  const complaintCoords = complaints
     .filter((c) => typeof c.lat === 'number' && typeof c.lng === 'number' && !isNaN(c.lat) && !isNaN(c.lng))
     .map((c) => [c.lat, c.lng] as [number, number]);
+
+  const publicCoords = publicClusters
+    .filter((p) => typeof p.centroid?.lat === 'number' && typeof p.centroid?.lng === 'number' && !isNaN(p.centroid.lat) && !isNaN(p.centroid.lng))
+    .map((p) => [p.centroid.lat, p.centroid.lng] as [number, number]);
+
+  const validCoordinates = [...complaintCoords, ...publicCoords];
 
   const defaultCenter: [number, number] = validCoordinates.length > 0
     ? [
@@ -139,7 +149,10 @@ export const CivicMap: React.FC<CivicMapProps> = ({
     };
   }).filter((c): c is { cluster: Cluster; centroid: [number, number]; memberCount: number } => c !== null);
 
-  const departments = Array.from(new Set(complaints.map((c) => c.department).filter(Boolean)));
+  const departments = Array.from(new Set([
+    ...complaints.map((c) => c.department),
+    ...publicClusters.map((p) => p.department),
+  ].filter(Boolean)));
 
   return (
     <div className="relative w-full rounded-xl overflow-hidden border border-slate-200 shadow-md bg-slate-100" style={{ height }}>
@@ -150,15 +163,17 @@ export const CivicMap: React.FC<CivicMapProps> = ({
             <span>GIS Layer:</span>
           </div>
 
-          <label className="inline-flex items-center gap-1 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showComplaintsLayer}
-              onChange={(e) => setShowComplaintsLayer(e.target.checked)}
-              className="rounded text-sky-600 focus:ring-0"
-            />
-            <span>Complaints ({filteredComplaints.length})</span>
-          </label>
+          {complaints.length > 0 && (
+            <label className="inline-flex items-center gap-1 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showComplaintsLayer}
+                onChange={(e) => setShowComplaintsLayer(e.target.checked)}
+                className="rounded text-sky-600 focus:ring-0"
+              />
+              <span>Complaints ({filteredComplaints.length})</span>
+            </label>
+          )}
 
           <label className="inline-flex items-center gap-1 cursor-pointer">
             <input
@@ -167,7 +182,7 @@ export const CivicMap: React.FC<CivicMapProps> = ({
               onChange={(e) => setShowClustersLayer(e.target.checked)}
               className="rounded text-indigo-600 focus:ring-0"
             />
-            <span>Tokens ({clusterCentroids.length})</span>
+            <span>Incident Tokens ({clusterCentroids.length || publicClusters.length})</span>
           </label>
 
           {departments.length > 0 && (
@@ -210,7 +225,7 @@ export const CivicMap: React.FC<CivicMapProps> = ({
 
         {onLocationSelect && <LocationPickerEvents onLocationSelect={onLocationSelect} />}
 
-        {/* Selected Location Marker (for citizen intake form) */}
+        {/* Selected Location Marker */}
         {selectedLocation && (
           <Marker
             position={[selectedLocation.lat, selectedLocation.lng]}
@@ -225,7 +240,7 @@ export const CivicMap: React.FC<CivicMapProps> = ({
           >
             <Popup>
               <div className="text-xs p-1">
-                <p className="font-bold text-sky-700">Selected Intake Coordinate</p>
+                <p className="font-bold text-sky-700">Selected Coordinate</p>
                 <p className="font-mono text-[11px] mt-1">
                   {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
                 </p>
@@ -234,7 +249,61 @@ export const CivicMap: React.FC<CivicMapProps> = ({
           </Marker>
         )}
 
-        {/* Token Centroid Markers */}
+        {/* Public Map Clusters */}
+        {showClustersLayer &&
+          publicClusters.map((pubCluster) => {
+            const isHigh = pubCluster.priority_score >= 0.6;
+            return (
+              <CircleMarker
+                key={`pub-cluster-${pubCluster.cluster_id}`}
+                center={[pubCluster.centroid.lat, pubCluster.centroid.lng]}
+                radius={Math.min(12 + pubCluster.complaint_count * 3, 35)}
+                pathOptions={{
+                  color: isHigh ? '#dc2626' : '#4f46e5',
+                  fillColor: isHigh ? '#ef4444' : '#6366f1',
+                  fillOpacity: 0.35,
+                  weight: 2,
+                }}
+              >
+                <Popup>
+                  <div className="p-1 space-y-2 min-w-[200px] text-xs">
+                    <div className="flex items-center justify-between border-b pb-1">
+                      <span className="font-bold text-indigo-700">{pubCluster.category}</span>
+                      <span className="bg-indigo-100 text-indigo-800 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                        {pubCluster.complaint_count} Report{pubCluster.complaint_count > 1 ? 's' : ''}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1 text-slate-600">
+                      <div className="flex justify-between">
+                        <span>Department:</span>
+                        <span className="font-semibold text-slate-800">{pubCluster.department}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Priority Tier:</span>
+                        <PriorityBadge score={pubCluster.priority_score} size="sm" />
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Status:</span>
+                        <span className="capitalize font-medium text-slate-800">{pubCluster.status}</span>
+                      </div>
+                    </div>
+
+                    {onSelectPublicCluster && (
+                      <button
+                        onClick={() => onSelectPublicCluster(pubCluster)}
+                        className="w-full mt-2 bg-indigo-600 text-white rounded py-1 font-semibold text-[11px] hover:bg-indigo-700 transition"
+                      >
+                        Inspect Location
+                      </button>
+                    )}
+                  </div>
+                </Popup>
+              </CircleMarker>
+            );
+          })}
+
+        {/* Officer Token Centroid Markers */}
         {showClustersLayer &&
           clusterCentroids.map(({ cluster, centroid, memberCount }) => {
             const isHigh = cluster.priority_score >= 0.6;

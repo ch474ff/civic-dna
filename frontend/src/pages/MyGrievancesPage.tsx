@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { complaintService } from '../services/complaintService';
-import { clusterService } from '../services/clusterService';
-import { Complaint } from '../types';
+import { Complaint, ComplaintStatusResponse } from '../types';
 import { formatDate } from '../utils/formatters';
-import { getErrorMessage } from '../utils/error';
+import { getApiErrorMessage } from '../utils/errorHandler';
 import { ClipboardList, Plus, AlertCircle, Eye, ArrowUpDown, Filter } from 'lucide-react';
 
 interface MyGrievancesPageProps {
@@ -13,9 +12,27 @@ interface MyGrievancesPageProps {
 
 interface GrievanceItem {
   complaint: Complaint;
-  status: 'Submitted' | 'Under Review' | 'Resolved' | 'Closed';
+  statusInfo: ComplaintStatusResponse | null;
+  displayStatus: string;
   updatedAt: string;
+  slaDeadline: string | null;
 }
+
+const mapStatusToDisplay = (status: string | undefined): string => {
+  switch ((status || '').toLowerCase()) {
+    case 'acknowledged':
+      return 'Acknowledged';
+    case 'in_progress':
+      return 'In Progress';
+    case 'resolved':
+      return 'Resolved';
+    case 'closed':
+      return 'Closed';
+    case 'submitted':
+    default:
+      return 'Submitted';
+  }
+};
 
 export const MyGrievancesPage: React.FC<MyGrievancesPageProps> = ({
   onNavigateToTrack,
@@ -43,47 +60,39 @@ export const MyGrievancesPage: React.FC<MyGrievancesPageProps> = ({
     setError(null);
 
     try {
-      // Load complaints in parallel
-      const complaintPromises = ids.map(id =>
-        complaintService.getComplaint(id).catch(() => null)
-      );
-      const loadedComplaints = (await Promise.all(complaintPromises)).filter(
-        (c): c is Complaint => c !== null
-      );
-
-      // Load corresponding cluster status in parallel
-      const itemPromises = loadedComplaints.map(async (comp) => {
-        let status: 'Submitted' | 'Under Review' | 'Resolved' | 'Closed' = 'Submitted';
-        let updatedAt = comp.created_at;
-
-        if (comp.cluster_id) {
+      // Load complaints and their sanitized public status in parallel
+      const itemPromises = ids.map(async (id) => {
+        try {
+          const comp = await complaintService.getComplaint(id);
+          let statusInfo: ComplaintStatusResponse | null = null;
           try {
-            const cl = await clusterService.getCluster(comp.cluster_id);
-            if (cl.status === 'acknowledged' || cl.status === 'in_progress') {
-              status = 'Under Review';
-            } else if (cl.status === 'resolved') {
-              status = 'Resolved';
-            } else if (cl.status === 'closed') {
-              status = 'Closed';
-            }
-            // Mapped timestamp update
-            updatedAt = cl.sla_deadline || comp.created_at;
+            statusInfo = await complaintService.getComplaintStatus(id);
           } catch {
-            // Ignore optional cluster status fetch error
+            // fallback if status endpoint unavailable
           }
-        }
 
-        return {
-          complaint: comp,
-          status,
-          updatedAt,
-        };
+          const displayStatus = mapStatusToDisplay(statusInfo?.status);
+          const updatedAt = statusInfo?.updated_at || comp.created_at;
+          const slaDeadline = statusInfo?.sla_deadline || null;
+
+          return {
+            complaint: comp,
+            statusInfo,
+            displayStatus,
+            updatedAt,
+            slaDeadline,
+          };
+        } catch {
+          return null;
+        }
       });
 
-      const items = await Promise.all(itemPromises);
-      setGrievances(items);
+      const results = (await Promise.all(itemPromises)).filter(
+        (item): item is GrievanceItem => item !== null
+      );
+      setGrievances(results);
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getApiErrorMessage(err, "We couldn't load your grievances. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -95,7 +104,7 @@ export const MyGrievancesPage: React.FC<MyGrievancesPageProps> = ({
 
   // Filter & Sort computation
   const filteredGrievances = grievances
-    .filter(g => statusFilter === 'All' || g.status === statusFilter)
+    .filter(g => statusFilter === 'All' || g.displayStatus === statusFilter)
     .sort((a, b) => {
       if (sortBy === 'newest') {
         return new Date(b.complaint.created_at).getTime() - new Date(a.complaint.created_at).getTime();
@@ -127,8 +136,7 @@ export const MyGrievancesPage: React.FC<MyGrievancesPageProps> = ({
       <div className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-md p-3 flex items-start gap-2">
         <span className="font-semibold text-blue-600">ⓘ</span>
         <span>
-          Note: This list is stored locally in your browser. Clearing your cookies or browsing history will clear this tracking list.
-          (Backend authentication list capability is currently reserved for officer accounts).
+          Note: This list is saved locally on your device for quick tracking.
         </span>
       </div>
 
@@ -137,7 +145,7 @@ export const MyGrievancesPage: React.FC<MyGrievancesPageProps> = ({
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex flex-col gap-3">
           <div className="flex items-start gap-2">
             <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-            <span className="font-medium">We couldn't load your grievances.</span>
+            <span className="font-medium">{error}</span>
           </div>
           <button
             onClick={fetchGrievances}
@@ -188,7 +196,7 @@ export const MyGrievancesPage: React.FC<MyGrievancesPageProps> = ({
                 {/* Filters */}
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
                   <Filter className="h-4 w-4 text-slate-400 flex-shrink-0" />
-                  {['All', 'Submitted', 'Under Review', 'Resolved', 'Closed'].map(filter => (
+                  {['All', 'Submitted', 'Acknowledged', 'In Progress', 'Resolved', 'Closed'].map(filter => (
                     <button
                       key={filter}
                       onClick={() => setStatusFilter(filter)}
@@ -227,7 +235,8 @@ export const MyGrievancesPage: React.FC<MyGrievancesPageProps> = ({
                   filteredGrievances.map((item) => {
                     const statusColors: Record<string, string> = {
                       'Submitted': 'bg-slate-100 text-slate-700 border-slate-200',
-                      'Under Review': 'bg-amber-50 text-amber-700 border-amber-200',
+                      'Acknowledged': 'bg-sky-50 text-sky-700 border-sky-200',
+                      'In Progress': 'bg-amber-50 text-amber-700 border-amber-200',
                       'Resolved': 'bg-emerald-50 text-emerald-700 border-emerald-200',
                       'Closed': 'bg-slate-100 text-slate-600 border-slate-200',
                     };
@@ -242,8 +251,8 @@ export const MyGrievancesPage: React.FC<MyGrievancesPageProps> = ({
                             <span className="font-mono text-xs text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded">
                               {item.complaint.complaint_id}
                             </span>
-                            <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded border ${statusColors[item.status]}`}>
-                              {item.status}
+                            <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded border ${statusColors[item.displayStatus] || 'bg-slate-100 text-slate-700'}`}>
+                              {item.displayStatus}
                             </span>
                           </div>
                           
@@ -263,6 +272,12 @@ export const MyGrievancesPage: React.FC<MyGrievancesPageProps> = ({
                               <>
                                 <span>&bull;</span>
                                 <span>Updated {formatDate(item.updatedAt)}</span>
+                              </>
+                            )}
+                            {item.slaDeadline && (
+                              <>
+                                <span>&bull;</span>
+                                <span className="text-blue-600">SLA: {formatDate(item.slaDeadline)}</span>
                               </>
                             )}
                           </div>

@@ -123,7 +123,79 @@ def test_classification_hinglish_complaints(classifier: MLClassificationService)
     }
     road_res = classifier.classify_complaint(road_complaint)
     assert road_res.category == "Roads & Potholes"
+
+
+def test_classification_kannada_complaints(classifier: MLClassificationService):
+    # 1. Water Supply
+    water_c = {
+        "title": "ದೊಡ್ಡ ನೀರಿನ ಪೈಪ್ ಸೋರಿಕೆ",
+        "description": "ಮಾರುಕಟ್ಟೆ ಹತ್ತಿರ ಮುಖ್ಯ ನೀರಿನ ಪೈಪ್ಲೈನ್ ತುಂಬಾ ಸೋರಿಕೆಯಾಗುತ್ತಿದೆ. ಕುಡಿಯುವ ನೀರು ವ್ಯರ್ಥವಾಗಿದೆ.",
+        "language": "kn",
+    }
+    water_res = classifier.classify_complaint(water_c)
+    assert water_res.category == "Water Supply"
+    assert water_res.department == "Water Department"
+    assert water_res.confidence > 0.0
+
+    # 2. Roads & Potholes
+    road_c = {
+        "title": "ರಸ್ತೆಯ ದೊಡ್ಡ ಗುಂಡಿಗಳು",
+        "description": "ಹಾಳಾದ ರಸ್ತೆ ಮತ್ತು ದೊಡ್ಡ ಗುಂಡಿ ಬಿದ್ದಿದೆ ವಾಹನಗಳಿಗೆ ತೊಂದರೆಯಾಗುತ್ತಿದೆ.",
+        "language": "kn",
+    }
+    road_res = classifier.classify_complaint(road_c)
+    assert road_res.category == "Roads & Potholes"
     assert road_res.department == "Public Works"
+
+    # 3. Electricity
+    elec_c = {
+        "title": "ವಿದ್ಯುತ್ ಕಡಿತ ಮತ್ತು ಕಂಬದ ತಂತಿ",
+        "description": "ಕರೆಂಟ್ ಇಲ್ಲ, ಟ್ರಾನ್ಸ್ಫಾರ್ಮರ್ ಕಿಡಿ ಹಾರುತ್ತಿದೆ ಮತ್ತು ಕತ್ತಲೆ ಆವರಿಸಿದೆ.",
+        "language": "kn",
+    }
+    elec_res = classifier.classify_complaint(elec_c)
+    assert elec_res.category == "Electricity"
+    assert elec_res.department == "Electricity Board"
+
+    # 4. Sanitation & Waste
+    san_c = {
+        "title": "ರಸ್ತೆಯಲ್ಲಿ ಕಸದ ರಾಶಿ",
+        "description": "ಕಸದ ಬುಟ್ಟಿ ತುಂಬಿದೆ, ಕಸ ವಿಲೇವಾರಿ ಮಾಡಿಲ್ಲ ಮತ್ತು ತೀವ್ರ ದುರ್ವಾಸನೆ ಬರುತ್ತಿದೆ.",
+        "language": "kn",
+    }
+    san_res = classifier.classify_complaint(san_c)
+    assert san_res.category == "Sanitation & Waste"
+    assert san_res.department == "Sanitation Department"
+
+    # 5. Drainage
+    drain_c = {
+        "title": "ಒಳಚರಂಡಿ ಮುಚ್ಚಿದೆ",
+        "description": "ಚರಂಡಿ ತುಂಬಿ ರಸ್ತೆಯಲ್ಲಿ ಕೊಳಕು ನೀರು ನಿಂತಿದೆ ಮತ್ತು ಗಟಾರ್ ಹರಿಯುತ್ತಿಲ್ಲ.",
+        "language": "kn",
+    }
+    drain_res = classifier.classify_complaint(drain_c)
+    assert drain_res.category == "Drainage"
+    assert drain_res.department == "Drainage & Sewerage"
+
+    # 6. Street Lighting
+    light_c = {
+        "title": "ಬೀದಿ ದೀಪ ಕೆಲಸ ಮಾಡುತ್ತಿಲ್ಲ",
+        "description": "ರಸ್ತೆ ದೀಪ ಕೆಟ್ಟಿದೆ ಮತ್ತು ರಾತ್ರಿ ವೇಳೆ ಸಂಪೂರ್ಣ ಕತ್ತಲೆ ಇದೆ.",
+        "language": "kn",
+    }
+    light_res = classifier.classify_complaint(light_c)
+    assert light_res.category == "Street Lighting"
+    assert light_res.department == "Street Lighting Division"
+
+    # 7. Public Safety
+    safety_c = {
+        "title": "ತೀವ್ರ ಅಪಾಯ ಮತ್ತು ಅಪಘಾತ ಸಾಧ್ಯತೆ",
+        "description": "ಇಲ್ಲಿ ಜೀವಕ್ಕೆ ಅಪಾಯಕಾರಿ ಪರಿಸ್ಥಿತಿ ಇದೆ, ತಕ್ಷಣ ರಕ್ಷಣೆ ಮತ್ತು ತುರ್ತು ಕ್ರಮ ಕೈಗೊಳ್ಳಬೇಕು.",
+        "language": "kn",
+    }
+    safety_res = classifier.classify_complaint(safety_c)
+    assert safety_res.category == "Public Safety"
+    assert safety_res.department == "Public Safety"
 
     # Electricity Hinglish
     elec_complaint = {

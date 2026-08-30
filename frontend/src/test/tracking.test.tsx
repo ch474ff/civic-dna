@@ -3,7 +3,6 @@ import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { CitizenTrackPage } from '../pages/CitizenTrackPage';
 import { complaintService } from '../services/complaintService';
-import { clusterService } from '../services/clusterService';
 import { calculateSlaStatus } from '../utils/sla';
 
 describe('Citizen Tracking & SLA', () => {
@@ -23,7 +22,7 @@ describe('Citizen Tracking & SLA', () => {
     expect(futureStatus.text).toContain('remaining');
   });
 
-  it('fetches complaint and cluster details on search', async () => {
+  it('fetches complaint and public status details on search without requiring officer auth', async () => {
     const mockComplaint = {
       complaint_id: 'cmp-202',
       title: 'Broken streetlight',
@@ -41,18 +40,25 @@ describe('Citizen Tracking & SLA', () => {
       created_at: new Date().toISOString(),
     };
 
-    const mockCluster = {
+    const mockStatus = {
+      complaint_id: 'cmp-202',
       cluster_id: 'clust-lit-1',
-      member_complaint_ids: ['cmp-202'],
+      status: 'in_progress',
       department: 'Street Lighting Division',
-      priority_score: 0.45,
+      category: 'Street Lighting',
+      priority_score: 0.75,
       sla_deadline: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-      status: 'acknowledged',
       root_cause_asset: 'POLE-44',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
     vi.spyOn(complaintService, 'getComplaint').mockResolvedValue(mockComplaint);
-    vi.spyOn(clusterService, 'getCluster').mockResolvedValue(mockCluster);
+    vi.spyOn(complaintService, 'getComplaintStatus').mockResolvedValue(mockStatus);
+    vi.spyOn(complaintService, 'getComplaintTimeline').mockResolvedValue([
+      { status: 'submitted', timestamp: new Date().toISOString() },
+      { status: 'in_progress', timestamp: new Date().toISOString() },
+    ]);
 
     render(<CitizenTrackPage initialComplaintId="cmp-202" />);
 
@@ -60,6 +66,7 @@ describe('Citizen Tracking & SLA', () => {
       expect(screen.getByText('Broken streetlight')).toBeInTheDocument();
       expect(screen.getAllByText(/Street Lighting Division/i)[0]).toBeInTheDocument();
       expect(screen.getByText(/Streetlight pole 44 not turning on/i)).toBeInTheDocument();
+      expect(screen.getByText(/Status: in_progress/i)).toBeInTheDocument();
     });
   });
 });

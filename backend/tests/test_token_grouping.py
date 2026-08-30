@@ -121,7 +121,6 @@ def test_different_issues_same_location_separated(real_pipeline_client: TestClie
 
 # Test 4: Similar Issue in Different Cities
 def test_same_issue_different_cities_separated(real_pipeline_client: TestClient):
-    # Delhi coordinates
     c1_payload = {
         "title": "Pothole on MG Road in Delhi",
         "description": "Deep road crater on MG Road in Delhi.",
@@ -134,7 +133,6 @@ def test_same_issue_different_cities_separated(real_pipeline_client: TestClient)
     assert r1.status_code == 201
     c1 = r1.json()
 
-    # Bangalore coordinates (~1700km away)
     c2_payload = {
         "title": "Pothole on MG Road in another city",
         "description": "Deep road crater on MG Road in Bangalore.",
@@ -164,7 +162,6 @@ def test_same_issue_nearby_coordinates_grouped(real_pipeline_client: TestClient)
     assert r1.status_code == 201
     c1 = r1.json()
 
-    # ~80 meters away
     c2_payload = {
         "title": "Drainage gutter blocked",
         "description": "Drain overflowing with dirty sewage water on road.",
@@ -238,9 +235,95 @@ def test_different_issues_same_spot(real_pipeline_client: TestClient):
     assert c1["cluster_id"] != c2["cluster_id"]
 
 
-# Test 8 & End-to-End Pipeline: Three Paraphrased Complaints -> ONE Token with 3 Members
+# Test 8: Water Pipeline Leaking vs Street Light Not Working near Market (MUST NOT group)
+def test_water_pipeline_vs_streetlight_near_market_separated(real_pipeline_client: TestClient):
+    c1_payload = {
+        "title": "Water leak",
+        "description": "Water pipeline leaking near market causing flooding.",
+        "lat": 28.6139,
+        "lng": 77.2090,
+        "images": [],
+        "language": "en",
+    }
+    r1 = real_pipeline_client.post("/api/complaints", json=c1_payload)
+    assert r1.status_code == 201
+    c1 = r1.json()
+
+    c2_payload = {
+        "title": "Street light issue",
+        "description": "Street light not working near market area pitch dark.",
+        "lat": 28.6140,
+        "lng": 77.2091,
+        "images": [],
+        "language": "en",
+    }
+    r2 = real_pipeline_client.post("/api/complaints", json=c2_payload)
+    assert r2.status_code == 201
+    c2 = r2.json()
+
+    assert c1["cluster_id"] != c2["cluster_id"]
+
+
+# Test 9: Drain Overflowing vs Road Pothole near School (MUST NOT group)
+def test_drain_overflowing_vs_road_pothole_near_school_separated(real_pipeline_client: TestClient):
+    c1_payload = {
+        "title": "Drain issue",
+        "description": "Drain is overflowing with sewage near school gate.",
+        "lat": 28.6139,
+        "lng": 77.2090,
+        "images": [],
+        "language": "en",
+    }
+    r1 = real_pipeline_client.post("/api/complaints", json=c1_payload)
+    assert r1.status_code == 201
+    c1 = r1.json()
+
+    c2_payload = {
+        "title": "Pothole issue",
+        "description": "Road has a pothole near school entrance.",
+        "lat": 28.6140,
+        "lng": 77.2091,
+        "images": [],
+        "language": "en",
+    }
+    r2 = real_pipeline_client.post("/api/complaints", json=c2_payload)
+    assert r2.status_code == 201
+    c2 = r2.json()
+
+    assert c1["cluster_id"] != c2["cluster_id"]
+
+
+# Test 10: Negation Handling: "There is no water shortage" vs "There is a water shortage"
+def test_negation_water_shortage_not_grouped(real_pipeline_client: TestClient):
+    c1_payload = {
+        "title": "Water report",
+        "description": "There is no water shortage in our colony, supply is normal.",
+        "lat": 28.6139,
+        "lng": 77.2090,
+        "images": [],
+        "language": "en",
+    }
+    r1 = real_pipeline_client.post("/api/complaints", json=c1_payload)
+    assert r1.status_code == 201
+    c1 = r1.json()
+
+    c2_payload = {
+        "title": "Water shortage",
+        "description": "There is a severe water shortage in our colony for two days.",
+        "lat": 28.6140,
+        "lng": 77.2091,
+        "images": [],
+        "language": "en",
+    }
+    r2 = real_pipeline_client.post("/api/complaints", json=c2_payload)
+    assert r2.status_code == 201
+    c2 = r2.json()
+
+    assert c1["cluster_id"] != c2["cluster_id"]
+
+
+# Test 11 & End-to-End Pipeline: Three Paraphrased Complaints -> ONE Token with 3 Members
 def test_three_paraphrased_complaints_single_token_integration(real_pipeline_client: TestClient):
-    # Complaint 1: "There is a large pothole on MG Road near the bus stop."
     c1_payload = {
         "title": "Pothole report 1",
         "description": "There is a large pothole on MG Road near the bus stop.",
@@ -253,7 +336,6 @@ def test_three_paraphrased_complaints_single_token_integration(real_pipeline_cli
     assert r1.status_code == 201
     c1 = r1.json()
 
-    # Complaint 2: "MG Road has a huge pothole near the bus stop that is causing problems."
     c2_payload = {
         "title": "Pothole report 2",
         "description": "MG Road has a huge pothole near the bus stop that is causing problems.",
@@ -266,7 +348,6 @@ def test_three_paraphrased_complaints_single_token_integration(real_pipeline_cli
     assert r2.status_code == 201
     c2 = r2.json()
 
-    # Complaint 3: "There is a big pothole at the bus stop on MG Road."
     c3_payload = {
         "title": "Pothole report 3",
         "description": "There is a big pothole at the bus stop on MG Road.",
@@ -279,13 +360,11 @@ def test_three_paraphrased_complaints_single_token_integration(real_pipeline_cli
     assert r3.status_code == 201
     c3 = r3.json()
 
-    # 1. Verify all three complaints reference the same cluster_id
     token_id = c1["cluster_id"]
     assert token_id
     assert c2["cluster_id"] == token_id
     assert c3["cluster_id"] == token_id
 
-    # 2. Retrieve resulting token and verify member count = 3
     token_resp = real_pipeline_client.get(f"/api/clusters/{token_id}", headers=_officer_headers(real_pipeline_client))
     assert token_resp.status_code == 200
     token_data = token_resp.json()
@@ -298,7 +377,6 @@ def test_three_paraphrased_complaints_single_token_integration(real_pipeline_cli
 
 
 def test_grouping_hinglish_and_english_equivalent_complaints(real_pipeline_client: TestClient):
-    # Complaint 1 (English): "The water pipeline near the market is leaking badly."
     c1_payload = {
         "title": "Leaking pipeline near market",
         "description": "The water pipeline near the market is leaking badly.",
@@ -311,7 +389,6 @@ def test_grouping_hinglish_and_english_equivalent_complaints(real_pipeline_clien
     assert r1.status_code == 201
     c1 = r1.json()
 
-    # Complaint 2 (Hinglish): "Market ke paas water pipeline bahut badly leak ho rahi hai."
     c2_payload = {
         "title": "Paani pipeline leak market ke paas",
         "description": "Market ke paas water pipeline bahut badly leak ho rahi hai.",
@@ -324,7 +401,6 @@ def test_grouping_hinglish_and_english_equivalent_complaints(real_pipeline_clien
     assert r2.status_code == 201
     c2 = r2.json()
 
-    # Confirm both English and Hinglish complaints are merged into the same Token
     assert c1["cluster_id"] == c2["cluster_id"]
     token_id = c1["cluster_id"]
     token_resp = real_pipeline_client.get(f"/api/clusters/{token_id}", headers=_officer_headers(real_pipeline_client))
@@ -333,3 +409,122 @@ def test_grouping_hinglish_and_english_equivalent_complaints(real_pipeline_clien
     members = token_data["member_complaint_ids"]
     assert c1["complaint_id"] in members
     assert c2["complaint_id"] in members
+
+
+def test_grouping_kannada_and_english_water_pipeline_complaints(real_pipeline_client: TestClient):
+    c1_payload = {
+        "title": "Water pipeline leaking near market",
+        "description": "Water pipeline is leaking near the market.",
+        "lat": 12.9716,
+        "lng": 77.5946,
+        "images": [],
+        "language": "en",
+    }
+    r1 = real_pipeline_client.post("/api/complaints", json=c1_payload)
+    assert r1.status_code == 201
+    c1 = r1.json()
+
+    c2_payload = {
+        "title": "ನೀರಿನ ಪೈಪ್ಲೈನ್ ಸೋರಿಕೆ",
+        "description": "ಮಾರುಕಟ್ಟೆ ಹತ್ತಿರ ನೀರಿನ ಪೈಪ್ಲೈನ್ ಸೋರಿಕೆಯಾಗುತ್ತಿದೆ.",
+        "lat": 12.9718,
+        "lng": 77.5948,
+        "images": [],
+        "language": "kn",
+    }
+    r2 = real_pipeline_client.post("/api/complaints", json=c2_payload)
+    assert r2.status_code == 201
+    c2 = r2.json()
+
+    assert c1["cluster_id"] == c2["cluster_id"]
+    token_id = c1["cluster_id"]
+    token_resp = real_pipeline_client.get(f"/api/clusters/{token_id}", headers=_officer_headers(real_pipeline_client))
+    assert token_resp.status_code == 200
+    token_data = token_resp.json()
+    members = token_data["member_complaint_ids"]
+    assert c1["complaint_id"] in members
+    assert c2["complaint_id"] in members
+
+
+def test_grouping_kannada_and_english_street_light_complaints(real_pipeline_client: TestClient):
+    c1_payload = {
+        "title": "Street light broken near market",
+        "description": "Street light is not working near the market.",
+        "lat": 12.9716,
+        "lng": 77.5946,
+        "images": [],
+        "language": "en",
+    }
+    r1 = real_pipeline_client.post("/api/complaints", json=c1_payload)
+    assert r1.status_code == 201
+    c1 = r1.json()
+
+    c2_payload = {
+        "title": "ಬೀದಿ ದೀಪ ಕೆಲಸ ಮಾಡುತ್ತಿಲ್ಲ",
+        "description": "ಮಾರುಕಟ್ಟೆ ಹತ್ತಿರ ಬೀದಿ ದೀಪ ಕೆಲಸ ಮಾಡುತ್ತಿಲ್ಲ.",
+        "lat": 12.9717,
+        "lng": 77.5947,
+        "images": [],
+        "language": "kn",
+    }
+    r2 = real_pipeline_client.post("/api/complaints", json=c2_payload)
+    assert r2.status_code == 201
+    c2 = r2.json()
+
+    assert c1["cluster_id"] == c2["cluster_id"]
+
+
+def test_kannada_water_vs_kannada_street_light_separated(real_pipeline_client: TestClient):
+    c1_payload = {
+        "title": "ನೀರಿನ ಪೈಪ್ಲೈನ್ ಸೋರಿಕೆ",
+        "description": "ಮಾರುಕಟ್ಟೆ ಹತ್ತಿರ ನೀರಿನ ಪೈಪ್ಲೈನ್ ಸೋರಿಕೆಯಾಗುತ್ತಿದೆ.",
+        "lat": 12.9716,
+        "lng": 77.5946,
+        "images": [],
+        "language": "kn",
+    }
+    r1 = real_pipeline_client.post("/api/complaints", json=c1_payload)
+    assert r1.status_code == 201
+    c1 = r1.json()
+
+    c2_payload = {
+        "title": "ಬೀದಿ ದೀಪ ಕೆಟ್ಟಿದೆ",
+        "description": "ಮಾರುಕಟ್ಟೆ ಹತ್ತಿರ ಬೀದಿ ದೀಪ ಕೆಲಸ ಮಾಡುತ್ತಿಲ್ಲ.",
+        "lat": 12.9716,
+        "lng": 77.5946,
+        "images": [],
+        "language": "kn",
+    }
+    r2 = real_pipeline_client.post("/api/complaints", json=c2_payload)
+    assert r2.status_code == 201
+    c2 = r2.json()
+
+    assert c1["cluster_id"] != c2["cluster_id"]
+
+
+def test_kannada_negation_water_shortage_not_grouped(real_pipeline_client: TestClient):
+    c1_payload = {
+        "title": "ನೀರಿನ ವರದಿ",
+        "description": "ಮಾರುಕಟ್ಟೆ ಹತ್ತಿರ ಯಾವುದೇ ನೀರಿನ ಸಮಸ್ಯೆ ಇಲ್ಲ, ನೀರು ಸೋರಿಕೆ ಇಲ್ಲ.",
+        "lat": 12.9716,
+        "lng": 77.5946,
+        "images": [],
+        "language": "kn",
+    }
+    r1 = real_pipeline_client.post("/api/complaints", json=c1_payload)
+    assert r1.status_code == 201
+    c1 = r1.json()
+
+    c2_payload = {
+        "title": "ನೀರಿನ ಪೈಪ್ಲೈನ್ ಸೋರಿಕೆ",
+        "description": "ಮಾರುಕಟ್ಟೆ ಹತ್ತಿರ ನೀರಿನ ಪೈಪ್ಲೈನ್ ತುಂಬಾ ಸೋರಿಕೆಯಾಗುತ್ತಿದೆ.",
+        "lat": 12.9717,
+        "lng": 77.5947,
+        "images": [],
+        "language": "kn",
+    }
+    r2 = real_pipeline_client.post("/api/complaints", json=c2_payload)
+    assert r2.status_code == 201
+    c2 = r2.json()
+
+    assert c1["cluster_id"] != c2["cluster_id"]
