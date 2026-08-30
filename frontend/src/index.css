@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Oxygen', 'Ubuntu', 'Cantarell', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom leaflet style adjustments */
+.leaflet-container {
+  font-family: inherit;
+  z-index: 10;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.leaflet-popup-content {
+  margin: 12px;
+  line-height: 1.4;
+}
+
+.custom-map-marker {
+  background: transparent;
+  border: none;
+}
+
+/* Form field focus states conforming to USWDS / GOV.UK style guidelines */
+.civic-input {
+  @apply w-full text-sm border border-slate-300 rounded-md px-3 py-2
+    focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600
+    transition-colors shadow-sm;
+}
+
+.civic-input::placeholder {
+  @apply text-slate-400;
+}
+
+.civic-select {
+  @apply w-full text-sm border border-slate-300 rounded-md px-3 py-2 bg-white
+    focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600
+    transition-colors shadow-sm;
+}
+
+.civic-textarea {
+  @apply w-full text-sm border border-slate-300 rounded-md px-3 py-2.5
+    focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600
+    transition-colors resize-y shadow-sm;
+}
+
+.civic-label {
+  @apply block text-sm font-semibold text-slate-700 mb-1;
+}
+
+.civic-helper {
+  @apply text-xs text-slate-500 mt-1;
+}
+
+.civic-btn-primary {
+  @apply inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700
+    text-white text-sm font-semibold px-5 py-2.5 rounded-md transition-colors
+    focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2
+    shadow-sm disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.civic-btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 border border-slate-300
+    text-slate-700 hover:bg-slate-50 bg-white text-sm font-semibold px-5 py-2.5 rounded-md
+    transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2
+    shadow-sm;
+}

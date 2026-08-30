@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civic-dna.local/schemas/cluster.json",
+  "title": "Cluster",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "cluster_id",
+    "member_complaint_ids",
+    "department",
+    "priority_score",
+    "sla_deadline",
+    "status",
+    "root_cause_asset"
+  ],
+  "properties": {
+    "cluster_id": { "type": "string" },
+    "member_complaint_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "department": { "type": "string" },
+    "priority_score": { "type": "number" },
+    "sla_deadline": { "type": "string", "format": "date-time" },
+    "status": { "type": "string" },
+    "root_cause_asset": { "type": ["string", "null"] }
+  }
+}
