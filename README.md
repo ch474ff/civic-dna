@@ -2,6 +2,8 @@
 
 Civic DNA is an AI-assisted civic grievance intelligence platform that transforms high volumes of citizen complaints into actionable civic **Tokens**, prioritizes them based on severity and sensitivity, routes them to the appropriate municipal departments, and provides transparent tracking for citizens and city administrators alike. In real-world urban environments, many citizens report the exact same underlying civic failure (such as a burst water main or an open pothole). Instead of treating every submission as an isolated ticket, Civic DNA identifies cross-lingual and spatial similarities to consolidate related complaints into a unified **Token** representing the core civic issue.
 
+> 📹 **Prototype Demo Video**: [Watch the Civic DNA Demonstration on Google Drive](https://drive.google.com/drive/folders/14bsFlUsBhTOd09gzptGPuXofo_Fe1WTF?usp=sharing)
+
 ---
 
 ## Key Features
@@ -331,6 +333,8 @@ git diff --check
 ---
 
 ## Prototype Validation Flow
+
+> 🎬 **Video Walkthrough**: Watch the complete prototype demonstration on [Google Drive](https://drive.google.com/drive/folders/14bsFlUsBhTOd09gzptGPuXofo_Fe1WTF?usp=sharing).
 
 Experience the complete end-to-end demo:
 
