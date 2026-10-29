@@ -399,3 +399,10 @@ The current repository delivers a functional, offline-capable prototype using de
 ## Presentation Summary
 
 **Civic DNA** replaces fragmented, redundant civic ticketing with an intelligent consolidation engine. By grouping identical issues across languages into unified **Tokens**, prioritizing them based on real-world impact, and providing transparent tracking, Civic DNA empowers municipal agencies to respond faster and keeps citizens informed every step of the way.
+
+---
+
+Created by (team members):
+1. Abhinav Jain (github.com/ch474ff)
+2. Prince Prakash (github.com/priinceprakash)
+3. Brijesh Chellapilla (github.com/Brijesh739)
